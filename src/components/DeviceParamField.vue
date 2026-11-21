@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { t, paramLabel, paramDescription, translatedText, errorMessage } from '../i18n';
 import { computed, ref, watch } from 'vue';
 import { getParam } from '../midi/sysex/zoomL6/params';
 import type { ParamId } from '../midi/sysex/zoomL6/params';
@@ -29,13 +30,13 @@ const emit = defineEmits<{
 const deviceSettings = useDeviceSettings();
 const def = computed(() => getParam(props.paramId));
 
-const displayLabel = computed(() => props.label ?? def.value.label);
+const displayLabel = computed(() => props.label ?? paramLabel(props.paramId));
 const controlled = computed(() => props.modelValue !== undefined);
 const value = computed<number | undefined>(() =>
   controlled.value ? props.modelValue : deviceSettings.values[props.paramId],
 );
 const paramStatus = computed(() => deviceSettings.status[props.paramId] ?? 'idle');
-const errorText = computed(() => deviceSettings.errors[props.paramId] ?? null);
+const errorText = computed(() => deviceSettings.errors[props.paramId] ? errorMessage(deviceSettings.errors[props.paramId]) : null);
 
 const isReadOnly = computed(() => props.readonly || def.value.readOnly === true);
 const isTextOnly = computed(() => isReadOnly.value || def.value.encoding.kind === 'ascii');
@@ -54,8 +55,8 @@ function commit(next: number): void {
 
 
 const statusTitle = computed(() => {
-  if (paramStatus.value === 'error') return errorText.value ?? 'Error';
-  return paramStatus.value;
+  if (paramStatus.value === 'error') return errorText.value ?? t('ui.error');
+  return translatedText(paramStatus.value);
 });
 
 // ── enum control ─────────────────────────────────────────────────────────────
@@ -133,13 +134,13 @@ const showNumberInput = computed(() => !hasSpecialValues.value || specialSelectV
         }"
         :title="statusTitle"
       ></i>
-      <label class="device-param-field__label" :title="def.description">
+      <label class="device-param-field__label" :title="paramDescription(paramId)">
         {{ displayLabel }}
         <span
           v-if="!def.verified"
           class="experimental-badge"
-          title="Not yet verified against real hardware"
-        >experimental</span>
+          :title="t('ui.not_yet_verified_against_real_hardware')"
+        >{{ t('ui.experimental') }}</span>
       </label>
     </div>
 
@@ -156,7 +157,7 @@ const showNumberInput = computed(() => !hasSpecialValues.value || specialSelectV
         @change="onEnumChange"
       >
         <option v-for="(optLabel, idx) in def.encoding.labels" :key="idx" :value="idx">
-          {{ optLabel }}
+          {{ translatedText(optLabel) }}
         </option>
       </select>
 
@@ -171,7 +172,7 @@ const showNumberInput = computed(() => !hasSpecialValues.value || specialSelectV
         @click="toggleBool"
       >
         <i class="lampara blanco" aria-hidden="true"></i>
-        <span class="toggle-state">{{ value === 1 ? 'ON' : 'OFF' }}</span>
+        <span class="toggle-state">{{ translatedText(value === 1 ? 'ON' : 'OFF') }}</span>
       </button>
 
       <!-- numeric with discrete choices (e.g. MIDI channel 1-16) -->
@@ -183,7 +184,7 @@ const showNumberInput = computed(() => !hasSpecialValues.value || specialSelectV
         @change="onEnumChange"
       >
         <option v-for="choice in def.choices" :key="choice.value" :value="choice.value">
-          {{ choice.label }}
+          {{ translatedText(choice.label) }}
         </option>
       </select>
 
@@ -197,9 +198,9 @@ const showNumberInput = computed(() => !hasSpecialValues.value || specialSelectV
           @change="onSpecialSelectChange"
         >
           <option v-for="opt in specialOptions" :key="opt.value" :value="opt.value">
-            {{ opt.label }}
+            {{ translatedText(opt.label) }}
           </option>
-          <option value="__custom">Custom value…</option>
+          <option value="__custom">{{ t('ui.custom_value') }}</option>
         </select>
         <input
           v-if="showNumberInput"

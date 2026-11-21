@@ -1,5 +1,6 @@
 <template>
   <div class="lfo-control">
+    <p class="lfo-help">{{ t('lfoHelp') }}</p>
     <div class="knobs-container">
       <!-- Rate Knob -->
       <div class="knob-wrapper">
@@ -23,8 +24,8 @@
                   class="knob-indicator" />
           </svg>
         </div>
-        <label class="knob-label">Rate</label>
-        <span class="knob-value">{{ local.rate.toFixed(1) }} Hz</span>
+        <label class="knob-label">{{ t('ui.rate') }}</label>
+        <span class="knob-value">{{ local.rate.toFixed(1) }} {{ t('fixed.Hz') }}</span>
       </div>
 
       <!-- Depth Knob -->
@@ -49,26 +50,26 @@
                   class="knob-indicator" />
           </svg>
         </div>
-        <label class="knob-label">Depth</label>
+        <label class="knob-label">{{ t('ui.depth') }}</label>
         <span class="knob-value">{{ Math.round(local.depth * 100) }}%</span>
       </div>
     </div>
 
     <div class="lfo-row">
-      <label>Shape</label>
+      <label>{{ t('ui.shape') }}</label>
       <select v-model="local.shape" @change="emitConfig">
-        <option value="sine">Sine</option>
-        <option value="triangle">Triangle</option>
-        <option value="square">Square</option>
-        <option value="saw">Saw</option>
+        <option value="sine">{{ t('ui.sine') }}</option>
+        <option value="triangle">{{ t('ui.triangle') }}</option>
+        <option value="square">{{ t('ui.square') }}</option>
+        <option value="saw">{{ t('ui.saw') }}</option>
       </select>
     </div>
     <div class="lfo-row">
-      <label>Mode</label>
+      <label>{{ t('ui.mode') }}</label>
       <select v-model="local.mode" @change="emitConfig">
-        <option value="bipolar">Bipolar</option>
-        <option value="positive">Positive</option>
-        <option value="negative">Negative</option>
+        <option value="bipolar">{{ t('ui.bipolar') }}</option>
+        <option value="positive">{{ t('ui.positive') }}</option>
+        <option value="negative">{{ t('ui.negative') }}</option>
       </select>
     </div>
     <div class="lfo-actions">
@@ -79,6 +80,7 @@
 </template>
 
 <script setup lang="ts">
+import { t } from '../i18n';
 import { ref, watch, onMounted, onUnmounted } from 'vue';
 
 export type LFOShape = 'sine' | 'triangle' | 'square' | 'saw';
@@ -155,11 +157,11 @@ function togglePause() {
 }
 
 function getEnableButtonText(): string {
-  return local.value.state === 'disabled' ? 'Enable' : 'Disable';
+  return local.value.state === 'disabled' ? t('ui.enable') : t('ui.disable');
 }
 
 function getPauseButtonText(): string {
-  return local.value.state === 'active' ? 'Pause' : 'Resume';
+  return local.value.state === 'active' ? t('ui.pause') : t('ui.resume');
 }
 
 function getEnableButtonClass(): string {
@@ -264,6 +266,7 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
+.lfo-help { max-width: 320px; margin-bottom: 10px; font-size: 12px; line-height: 1.4; }
 .lfo-control {
   display: flex;
   flex-direction: column;

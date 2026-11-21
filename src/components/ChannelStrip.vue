@@ -2,19 +2,19 @@
   <article
     class="tira"
     :class="{ estereo, muda: values.mute > 63 }"
-    :aria-label="`Canal ${channelData.channel}`"
+    :aria-label="t('channel', { n: channelData.channel })"
     @keydown.esc="cierraMenu"
   >
     <div class="tira-cab">
       <button
         type="button"
         class="tira-num"
-        :title="`Opciones del canal ${channelData.channel}`"
+        :title="t('channelOptions', { n: channelData.channel })"
         aria-haspopup="menu"
         :aria-expanded="menuAbierto"
         @click="menuAbierto = !menuAbierto"
       >{{ channelData.channel }}</button>
-      <span class="tira-tipo">{{ estereo ? 'ESTÉREO' : 'MONO' }}</span>
+      <span class="tira-tipo">{{ estereo ? t('stereo') : 'MONO' }}</span>
       <MidiControl
         v-if="channelData.controls.monoX2"
         class="tira-extra"
@@ -22,7 +22,7 @@
         v-model="values.monoX2"
         @change="onControlChange('monoX2', $event)"
         forma="mini"
-        rotulo="MONO x2"
+        :rotulo="t('fixed.MONO_x2')"
         ref="monoX2Ref"
       />
       <MidiControl
@@ -32,7 +32,7 @@
         v-model="values.usb12"
         @change="onControlChange('usb12', $event)"
         forma="mini"
-        rotulo="USB 1/2"
+        :rotulo="t('fixed.USB_1_2')"
         ref="usb12Ref"
       />
       <MidiControl
@@ -42,48 +42,48 @@
         v-model="values.usb34"
         @change="onControlChange('usb34', $event)"
         forma="mini"
-        rotulo="USB 3/4"
+        :rotulo="t('fixed.USB_3_4')"
         ref="usb34Ref"
       />
 
       <div v-if="menuAbierto" class="tira-menu" role="menu">
-        <button type="button" role="menuitem" @click="alReiniciar">Reiniciar este canal</button>
-        <button type="button" role="menuitem" @click="alReiniciarTodos">Reiniciar todos los canales</button>
+        <button type="button" role="menuitem" @click="alReiniciar">{{ t('ui.reset_this_channel') }}</button>
+        <button type="button" role="menuitem" @click="alReiniciarTodos">{{ t('ui.reset_all_channels') }}</button>
         <button type="button" role="menuitem" :disabled="!hasActiveOrPausedLfos" @click="alPausarLfos">{{ lfoButtonText }}</button>
       </div>
     </div>
 
     <div>
-      <h2 class="t-rotulo">EQ</h2>
+      <h2 class="t-rotulo">{{ t('fixed.EQ') }}</h2>
       <div class="rejilla">
-        <MidiControl :control="channelData.controls.eq.high" v-model="values.eqHigh" @change="onControlChange('eqHigh', $event)" unidad="eq" rotulo="HIGH" ref="eqHighRef" />
-        <MidiControl :control="channelData.controls.eq.mid" v-model="values.eqMid" @change="onControlChange('eqMid', $event)" unidad="eq" rotulo="MID" ref="eqMidRef" />
-        <MidiControl :control="channelData.controls.eq.midFreq" v-model="values.eqMidFreq" @change="onControlChange('eqMidFreq', $event)" unidad="frec" rotulo="FREQ" ref="eqMidFreqRef" />
-        <MidiControl :control="channelData.controls.eq.low" v-model="values.eqLow" @change="onControlChange('eqLow', $event)" unidad="eq" rotulo="LOW" ref="eqLowRef" />
+        <MidiControl :control="channelData.controls.eq.high" v-model="values.eqHigh" @change="onControlChange('eqHigh', $event)" unidad="eq" :rotulo="t('fixed.HIGH')" ref="eqHighRef" />
+        <MidiControl :control="channelData.controls.eq.mid" v-model="values.eqMid" @change="onControlChange('eqMid', $event)" unidad="eq" :rotulo="t('fixed.MID')" ref="eqMidRef" />
+        <MidiControl :control="channelData.controls.eq.midFreq" v-model="values.eqMidFreq" @change="onControlChange('eqMidFreq', $event)" unidad="frec" :rotulo="t('fixed.FREQ')" ref="eqMidFreqRef" />
+        <MidiControl :control="channelData.controls.eq.low" v-model="values.eqLow" @change="onControlChange('eqLow', $event)" unidad="eq" :rotulo="t('fixed.LOW')" ref="eqLowRef" />
       </div>
     </div>
 
     <div>
-      <h2 class="t-rotulo">Envíos</h2>
+      <h2 class="t-rotulo">{{ t('ui.sends') }}</h2>
       <div class="rejilla">
-        <MidiControl :control="channelData.controls.aux1" v-model="values.aux1" @change="onControlChange('aux1', $event)" unidad="envio" rotulo="AUX 1" ref="aux1Ref" />
-        <MidiControl :control="channelData.controls.aux2" v-model="values.aux2" @change="onControlChange('aux2', $event)" unidad="envio" rotulo="AUX 2" ref="aux2Ref" />
-        <MidiControl :control="channelData.controls.efxSend" v-model="values.efxSend" @change="onControlChange('efxSend', $event)" unidad="envio" rotulo="EFX" ref="efxSendRef" />
+        <MidiControl :control="channelData.controls.aux1" v-model="values.aux1" @change="onControlChange('aux1', $event)" unidad="envio" :rotulo="t('fixed.AUX_1')" ref="aux1Ref" />
+        <MidiControl :control="channelData.controls.aux2" v-model="values.aux2" @change="onControlChange('aux2', $event)" unidad="envio" :rotulo="t('fixed.AUX_2')" ref="aux2Ref" />
+        <MidiControl :control="channelData.controls.efxSend" v-model="values.efxSend" @change="onControlChange('efxSend', $event)" unidad="envio" :rotulo="t('fixed.EFX')" ref="efxSendRef" />
         <MidiControl
           v-if="mixerType === 'l6max' && channelData.controls.subMix"
           :control="channelData.controls.subMix"
           v-model="values.subMix"
           @change="onControlChange('subMix', $event)"
           unidad="envio"
-          rotulo="SUB"
+          :rotulo="t('fixed.SUB')"
           ref="subMixRef"
         />
       </div>
     </div>
 
     <div class="fila-pan">
-      <MidiControl :control="channelData.controls.pan" v-model="values.pan" @change="onControlChange('pan', $event)" unidad="pan" rotulo="PAN" ref="panRef" />
-      <MidiControl :control="channelData.controls.mute" v-model="values.mute" @change="onControlChange('mute', $event)" forma="mute" tono="ambar" rotulo="MUTE" ref="muteRef" />
+      <MidiControl :control="channelData.controls.pan" v-model="values.pan" @change="onControlChange('pan', $event)" unidad="pan" :rotulo="t('fixed.PAN')" ref="panRef" />
+      <MidiControl :control="channelData.controls.mute" v-model="values.mute" @change="onControlChange('mute', $event)" forma="mute" tono="ambar" :rotulo="t('fixed.MUTE')" ref="muteRef" />
     </div>
 
     <MidiControl
@@ -92,7 +92,7 @@
       @change="onControlChange('volume', $event)"
       vista="fader"
       unidad="nivel"
-      rotulo="Nivel"
+      :rotulo="t('ui.level_2')"
       ref="volumeRef"
     />
 
@@ -101,6 +101,7 @@
 </template>
 
 <script setup lang="ts">
+import { t } from '../i18n';
 import { reactive, ref, computed } from 'vue';
 import MidiControl from './MidiControl.vue';
 import TapeLabel from './TapeLabel.vue';
@@ -251,9 +252,9 @@ const hasActiveOrPausedLfos = computed(() => {
 });
 
 const lfoButtonText = computed(() => {
-  if (!hasActiveOrPausedLfos.value) return 'Sin LFO en este canal';
-  if (hasActiveLfos.value) return 'Pausar los LFO';
-  return 'Reanudar los LFO';
+  if (!hasActiveOrPausedLfos.value) return t('ui.no_lfos_on_this_channel');
+  if (hasActiveLfos.value) return t('ui.pause_lfos_3');
+  return t('ui.resume_lfos_3');
 });
 
 // Method to pause/resume all LFOs on this channel

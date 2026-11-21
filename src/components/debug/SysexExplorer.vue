@@ -12,6 +12,7 @@ const sessionHeld = ref(false);
 </script>
 
 <script setup lang="ts">
+import { t, translatedText, errorMessage, diagnosticText, payloadField, language } from '../../i18n';
 import { computed, onBeforeUnmount, watch } from 'vue';
 import { sysexExplorerStore, type SweepRow } from '../../stores/sysexExplorerStore';
 import { editorSession } from '../../services/editorSessionService';
@@ -51,28 +52,28 @@ const statePillClass = computed(() => {
 /** Why the session can't be opened right now, or `null` if it can. Mirrors the link-readiness
  * checks in `useDeviceSettings` (not exported from there, so restated here for the explorer). */
 const blockedReason = computed<string | null>(() => {
-  if (!device.linkEnabled.value) return 'Editor link (SysEx) is turned off in Advanced Settings.';
+  if (!device.linkEnabled.value) return t('editorDisabled');
   switch (device.link.value) {
     case 'no-sysex':
-      return 'System Exclusive is not enabled. Reload the app and allow SysEx when prompted.';
+      return errorMessage('System Exclusive is not enabled. Reload the app and allow SysEx when prompted.');
     case 'no-editor-port':
-      return 'No Zoom “Editor” MIDI port found. Connect the mixer over USB.';
+      return t('ui.no_zoom_editor_midi_port_found_connect_the_mixer_over_usb');
     case 'suspended':
-      return 'The editor link is suspended (e.g. USB mass storage in progress).';
+      return t('editorSuspended');
     default:
       return null;
   }
 });
 
 const opening = ref(false);
-const openError = ref<string | null>(null);
+const openError = ref<(() => string) | null>(null);
 
 async function openSession(): Promise<void> {
   if (releaseSession || opening.value) return;
   // Respect the same link-readiness gate the composable uses. Opening while the link is
   // suspended (mass storage in progress) would race the file-transfer handshake on the wire.
   if (blockedReason.value) {
-    openError.value = blockedReason.value;
+    openError.value = () => blockedReason.value ?? t('editorClosed');
     return;
   }
   openError.value = null;
@@ -82,7 +83,7 @@ async function openSession(): Promise<void> {
   try {
     await editorSession.open();
   } catch (e) {
-    openError.value = e instanceof Error ? e.message : String(e);
+    openError.value = () => errorMessage(e);
     // Release so "Open" is clickable again immediately, instead of forcing an explicit Close first.
     closeSession();
   } finally {
@@ -113,9 +114,9 @@ const layoutLabel = computed<string | null>(() => {
   const payload = livePayload.value;
   if (!payload || payload.length === 0) return null;
   const id = snapshotLayoutFor(payload)?.id;
-  const name = id === undefined ? 'unknown' : id;
+  const name = id === undefined ? t('unknown') : id;
   const pretty = name.toLowerCase() === 'l6max' ? 'L6max' : name.toLowerCase() === 'l6' ? 'L6' : name;
-  return `Layout ${pretty} (0x${payload[0]!.toString(16).padStart(2, '0')}), ${payload.length} bytes`;
+  return t('layout', { name: pretty, byte: `0x${payload[0]!.toString(16).padStart(2, '0')}`, count: payload.length });
 });
 
 const rereadConfirmed = ref(false);
@@ -137,18 +138,19 @@ onBeforeUnmount(() => {
 });
 
 // ── raw hex send ───────────────────────────────────────────────────────────────
-const rawHexError = ref<string | null>(null);
+const rawHexError = ref<(() => string) | null>(null);
 
 function sendRawHex(): void {
   rawHexError.value = null;
   try {
     const bytes = hexToBytes(sysexExplorerStore.rawHex);
     if (bytes.length < 2 || bytes[0] !== 0xf0 || bytes[bytes.length - 1] !== 0xf7) {
-      throw new Error('Message must start with F0 and end with F7.');
+      rawHexError.value = () => t('hexError');
+      return;
     }
     editorSession.sendRaw(bytes);
   } catch (e) {
-    rawHexError.value = e instanceof Error ? e.message : String(e);
+    rawHexError.value = () => errorMessage(e);
   }
 }
 
@@ -192,7 +194,7 @@ function runSetParam(): void {
 const snapshotLabel = ref('');
 
 function takeSnapshot(): void {
-  sysexExplorerStore.takeSnapshot(snapshotLabel.value);
+  sysexExplorerStore.takeSnapshot(snapshotLabel.value || t('snapshotName', { time: new Date().toLocaleTimeString(language.value === 'es' ? 'es-CO' : 'en-US') }));
   snapshotLabel.value = '';
 }
 
@@ -227,7 +229,7 @@ function exportJson(): void {
   URL.revokeObjectURL(url);
 }
 
-const importError = ref<string | null>(null);
+const importError = ref<(() => string) | null>(null);
 
 async function onImportFile(event: Event): Promise<void> {
   importError.value = null;
@@ -238,7 +240,7 @@ async function onImportFile(event: Event): Promise<void> {
     const text = await file.text();
     sysexExplorerStore.importJson(text);
   } catch (e) {
-    importError.value = e instanceof Error ? e.message : String(e);
+    importError.value = () => errorMessage(e);
   } finally {
     input.value = '';
   }
@@ -248,14 +250,14 @@ async function onImportFile(event: Event): Promise<void> {
 const visibleMessageLog = computed(() => sysexExplorerStore.messageLog.slice(0, 50));
 
 function formatLogTime(at: number): string {
-  return new Date(at).toLocaleTimeString('en-US', { hour12: false });
+  return new Date(at).toLocaleTimeString(language.value === 'es' ? 'es-CO' : 'en-US', { hour12: false });
 }
 </script>
 
 <template>
   <div class="sysex-explorer">
     <div class="notice notice-warn">
-      Quit ZOOM L6 Editor before opening a session (MIDI Monitor spying is fine).
+      {{ t('ui.quit_zoom_l6_editor_before_opening_a_session_midi_monitor_spying_is_fine') }}
     </div>
 
     <!-- Session status -->
@@ -269,104 +271,104 @@ function formatLogTime(at: number): string {
             blanco: sessionState === 'closed',
             on: sessionState !== 'closed'
           }" />
-          {{ stateLabel[sessionState] ?? sessionState }}
+          {{ translatedText(stateLabel[sessionState] ?? sessionState) }}
         </span>
-        <span class="info-piece" v-if="device.firmware.value">FW {{ device.firmware.value }}</span>
-        <span class="info-piece">HB misses: {{ device.heartbeatMisses.value }}</span>
+        <span class="info-piece" v-if="device.firmware.value">{{ t('ui.fw_2') }} {{ device.firmware.value }}</span>
+        <span class="info-piece">{{ t('ui.hb_misses') }} {{ device.heartbeatMisses.value }}</span>
         <span class="info-piece" v-if="isOpen && layoutLabel">{{ layoutLabel }}</span>
         <div class="spacer" />
         <button class="tecla btn" :disabled="sessionHeld || opening" @click="openSession">
-          {{ opening ? 'Opening…' : 'Open' }}
+          {{ opening ? t('ui.opening') : t('ui.open') }}
         </button>
         <button class="tecla btn" :disabled="!sessionHeld" @click="closeSession">
-          Close
+          {{ t('ui.close') }}
         </button>
         <button class="tecla btn" :disabled="!isOpen || sysexExplorerStore.reread.busy" @click="rereadSnapshot">
-          {{ sysexExplorerStore.reread.busy ? 'Re-reading…' : 'Re-read snapshot' }}
+          {{ sysexExplorerStore.reread.busy ? t('ui.re_reading') : t('ui.re_read_snapshot') }}
         </button>
       </div>
-      <div class="hint hint-ok" v-if="rereadConfirmed">Snapshot re-read<template v-if="layoutLabel"> — {{ layoutLabel }}</template></div>
-      <div class="hint hint-error" v-if="sysexExplorerStore.reread.error">{{ sysexExplorerStore.reread.error }}</div>
+      <div class="hint hint-ok" v-if="rereadConfirmed">{{ t('ui.snapshot_re_read') }}<template v-if="layoutLabel"> — {{ layoutLabel }}</template></div>
+      <div class="hint hint-error" v-if="sysexExplorerStore.reread.error">{{ errorMessage(sysexExplorerStore.reread.error) }}</div>
       <div class="hint hint-warn" v-if="blockedReason && !isOpen">{{ blockedReason }}</div>
-      <div class="hint hint-error" v-if="openError">{{ openError }}</div>
-      <div class="hint hint-error" v-if="device.lastError.value">{{ device.lastError.value }}</div>
+      <div class="hint hint-error" v-if="openError">{{ openError() }}</div>
+      <div class="hint hint-error" v-if="device.lastError.value">{{ errorMessage(device.lastError.value) }}</div>
     </section>
 
     <!-- Raw hex send -->
     <section class="sysex-section grupo">
-      <h4 class="t-rotulo">Raw SysEx</h4>
+      <h4 class="t-rotulo">{{ t('ui.raw_sysex') }}</h4>
       <textarea
         v-model="sysexExplorerStore.rawHex"
         class="mono-input textarea"
         rows="2"
-        placeholder="F0 52 00 00 46 00 00 F7"
+        :placeholder="t('fixed.F0_52_00_00_46_00_00_F7')"
         :disabled="!isOpen"
       />
       <div class="section-row">
-        <button class="tecla btn" :disabled="!isOpen" @click="sendRawHex">Send</button>
-        <span class="hint hint-error" v-if="rawHexError">{{ rawHexError }}</span>
+        <button class="tecla btn" :disabled="!isOpen" @click="sendRawHex">{{ t('ui.send') }}</button>
+        <span class="hint hint-error" v-if="rawHexError">{{ rawHexError() }}</span>
       </div>
     </section>
 
     <!-- Get single -->
     <section class="sysex-section grupo">
-      <h4 class="t-rotulo">Get param</h4>
+      <h4 class="t-rotulo">{{ t('ui.get_param') }}</h4>
       <div class="section-row wrap">
         <label class="field">
-          Group
+          {{ t('ui.group') }}
           <input type="number" min="0" :max="0x7e" v-model.number="sysexExplorerStore.single.group" :disabled="!isOpen" />
         </label>
         <label class="field">
-          Index
+          {{ t('ui.index') }}
           <input type="number" min="0" max="127" v-model.number="sysexExplorerStore.single.index" :disabled="!isOpen" />
         </label>
         <button class="tecla btn" :disabled="!isOpen || sysexExplorerStore.single.busy" @click="sysexExplorerStore.getSingle()">
-          {{ sysexExplorerStore.single.busy ? 'Reading…' : 'Get' }}
+          {{ sysexExplorerStore.single.busy ? t('ui.reading') : t('ui.get') }}
         </button>
       </div>
       <div class="mono-output" v-if="sysexExplorerStore.single.result">
         {{ bytesToHex(sysexExplorerStore.single.result) }}
       </div>
-      <div class="hint hint-error" v-if="sysexExplorerStore.single.error">{{ sysexExplorerStore.single.error }}</div>
+      <div class="hint hint-error" v-if="sysexExplorerStore.single.error">{{ errorMessage(sysexExplorerStore.single.error) }}</div>
     </section>
 
     <!-- Sweep -->
     <section class="sysex-section grupo">
-      <h4 class="t-rotulo">Sweep (GET only)</h4>
+      <h4 class="t-rotulo">{{ t('ui.sweep_get_only') }}</h4>
       <div class="section-row wrap">
         <label class="field">
-          Group from
+          {{ t('ui.group_from') }}
           <input type="number" min="0" :max="0x7e" v-model.number="sysexExplorerStore.sweep.groupFrom" :disabled="sysexExplorerStore.sweep.running" />
         </label>
         <label class="field">
-          Group to
+          {{ t('ui.group_to') }}
           <input type="number" min="0" :max="0x7e" v-model.number="sysexExplorerStore.sweep.groupTo" :disabled="sysexExplorerStore.sweep.running" />
         </label>
         <label class="field">
-          Index from
+          {{ t('ui.index_from') }}
           <input type="number" min="0" max="127" v-model.number="sysexExplorerStore.sweep.indexFrom" :disabled="sysexExplorerStore.sweep.running" />
         </label>
         <label class="field">
-          Index to
+          {{ t('ui.index_to') }}
           <input type="number" min="0" max="127" v-model.number="sysexExplorerStore.sweep.indexTo" :disabled="sysexExplorerStore.sweep.running" />
         </label>
       </div>
       <div class="section-row wrap">
         <label class="field">
-          Interval (ms)
+          {{ t('ui.interval_ms') }}
           <input type="number" min="0" v-model.number="sysexExplorerStore.sweep.intervalMs" :disabled="sysexExplorerStore.sweep.running" />
         </label>
         <label class="field">
-          Timeout (ms)
+          {{ t('ui.timeout_ms') }}
           <input type="number" min="1" v-model.number="sysexExplorerStore.sweep.timeoutMs" :disabled="sysexExplorerStore.sweep.running" />
         </label>
-        <button class="tecla btn" :disabled="!isOpen || sysexExplorerStore.sweep.running" @click="sysexExplorerStore.runSweep()">Run</button>
-        <button class="tecla btn btn-danger" :disabled="!sysexExplorerStore.sweep.running" @click="sysexExplorerStore.abortSweep()">Abort</button>
+        <button class="tecla btn" :disabled="!isOpen || sysexExplorerStore.sweep.running" @click="sysexExplorerStore.runSweep()">{{ t('ui.run') }}</button>
+        <button class="tecla btn btn-danger" :disabled="!sysexExplorerStore.sweep.running" @click="sysexExplorerStore.abortSweep()">{{ t('ui.abort') }}</button>
       </div>
       <div class="hint hint-warn" v-if="sysexExplorerStore.sweep.needsConfirm">
-        That range is a large number of requests. <button class="link-btn" @click="sysexExplorerStore.runSweep(true)">Confirm &amp; run anyway</button>
+        {{ t('ui.that_range_is_a_large_number_of_requests') }} <button class="link-btn" @click="sysexExplorerStore.runSweep(true)">{{ t('ui.confirm_run_anyway') }}</button>
       </div>
-      <div class="hint hint-error" v-if="sysexExplorerStore.sweep.error">{{ sysexExplorerStore.sweep.error }}</div>
+      <div class="hint hint-error" v-if="sysexExplorerStore.sweep.error">{{ errorMessage(sysexExplorerStore.sweep.error) }}</div>
       <div class="hint" v-if="sysexExplorerStore.sweep.running || sysexExplorerStore.sweep.progress.total > 0">
         {{ sysexExplorerStore.sweep.progress.done }} / {{ sysexExplorerStore.sweep.progress.total }}
       </div>
@@ -374,12 +376,12 @@ function formatLogTime(at: number): string {
         <table class="mono-table">
           <thead>
             <tr>
-              <th>Group</th>
-              <th>Index</th>
-              <th>Width</th>
-              <th>Values</th>
-              <th>Latency</th>
-              <th>Registry</th>
+              <th>{{ t('ui.group') }}</th>
+              <th>{{ t('ui.index') }}</th>
+              <th>{{ t('ui.width') }}</th>
+              <th>{{ t('ui.values') }}</th>
+              <th>{{ t('ui.latency') }}</th>
+              <th>{{ t('ui.registry') }}</th>
               <th></th>
             </tr>
           </thead>
@@ -388,12 +390,12 @@ function formatLogTime(at: number): string {
               <td>{{ row.group }}</td>
               <td>{{ row.index }}</td>
               <td>{{ row.values ? row.values.length : '—' }}</td>
-              <td class="mono">{{ row.status === 'ok' ? sweepRowHex(row) : row.status }}</td>
-              <td>{{ row.latencyMs }} ms</td>
+              <td class="mono">{{ row.status === 'ok' ? sweepRowHex(row) : translatedText(row.status) }}</td>
+              <td>{{ row.latencyMs }} {{ t('fixed.ms') }}</td>
               <td>{{ row.registryId ?? '—' }}</td>
               <td>
                 <button class="link-btn" v-if="row.values" @click="copyRegistryEntry(row)">
-                  {{ copiedKey === `${row.group}:${row.index}` ? 'Copied' : 'Copy as registry entry' }}
+                  {{ copiedKey === `${row.group}:${row.index}` ? t('ui.copied') : t('ui.copy_as_registry_entry') }}
                 </button>
               </td>
             </tr>
@@ -404,76 +406,75 @@ function formatLogTime(at: number): string {
 
     <!-- Set -->
     <section class="sysex-section grupo">
-      <h4 class="t-rotulo">Set param</h4>
+      <h4 class="t-rotulo">{{ t('ui.set_param') }}</h4>
       <div class="section-row wrap">
         <label class="field">
-          Group
+          {{ t('ui.group') }}
           <input type="number" min="0" :max="0x7e" v-model.number="sysexExplorerStore.setForm.group" :disabled="!isOpen" />
         </label>
         <label class="field">
-          Index
+          {{ t('ui.index') }}
           <input type="number" min="0" max="127" v-model.number="sysexExplorerStore.setForm.index" :disabled="!isOpen" />
         </label>
         <label class="field field-grow">
-          Values (hex)
+          {{ t('ui.values_hex') }}
           <input type="text" class="mono-input" v-model="sysexExplorerStore.setForm.valuesHex" placeholder="00 01" :disabled="!isOpen" />
         </label>
       </div>
       <label class="checkbox-row" v-if="!setAddressKnown">
         <input type="checkbox" v-model="setConfirmed" />
-        I understand this address is not in the registry
+        {{ t('ui.i_understand_this_address_is_not_in_the_registry') }}
       </label>
       <div class="section-row">
-        <button class="tecla btn btn-danger" :disabled="!isOpen || (!setAddressKnown && !setConfirmed)" @click="runSetParam">Set</button>
+        <button class="tecla btn btn-danger" :disabled="!isOpen || (!setAddressKnown && !setConfirmed)" @click="runSetParam">{{ t('ui.set') }}</button>
       </div>
-      <div class="hint" v-if="sysexExplorerStore.setForm.result">{{ sysexExplorerStore.setForm.result }}</div>
+      <div class="hint" v-if="sysexExplorerStore.setForm.result">{{ diagnosticText(sysexExplorerStore.setForm.result) }}</div>
     </section>
 
     <!-- Snapshots & diff -->
     <section class="sysex-section grupo">
-      <h4 class="t-rotulo">Snapshots</h4>
+      <h4 class="t-rotulo">{{ t('ui.snapshots') }}</h4>
       <details class="workflow-hint">
-        <summary>How to find a setting's byte</summary>
+        <summary>{{ t('ui.how_to_find_a_setting_s_byte') }}</summary>
         <p>
-          To find a setting's byte: Take snapshot → change one setting in Device Settings or Sound Pads →
-          Re-read snapshot → Take snapshot → Diff.
+          {{ t('ui.to_find_a_setting_s_byte_take_snapshot_change_one_setting_in_device_settings_or_sound') }}
         </p>
       </details>
       <div class="section-row wrap">
-        <input type="text" class="mono-input field-grow" v-model="snapshotLabel" placeholder="Label" />
-        <button class="tecla btn" @click="takeSnapshot">Take snapshot</button>
+        <input type="text" class="mono-input field-grow" v-model="snapshotLabel" :placeholder="t('ui.label')" />
+        <button class="tecla btn" @click="takeSnapshot">{{ t('ui.take_snapshot') }}</button>
       </div>
       <ul class="snapshot-list" v-if="sysexExplorerStore.snapshots.length > 0">
         <li v-for="snap in sysexExplorerStore.snapshots" :key="snap.id">
-          {{ snap.label }} — {{ Object.keys(snap.params).length }} params — {{ new Date(snap.takenAt).toLocaleTimeString() }}
+          {{ snap.label }} — {{ Object.keys(snap.params).length }} {{ t('ui.params') }} {{ new Date(snap.takenAt).toLocaleTimeString() }}
         </li>
       </ul>
       <div class="section-row wrap" v-if="sysexExplorerStore.snapshots.length > 1">
         <label class="field field-grow">
-          A
+          {{ t('fixed.A') }}
           <select v-model="diffA">
-            <option value="" disabled>Choose…</option>
+            <option value="" disabled>{{ t('ui.choose') }}</option>
             <option v-for="snap in sysexExplorerStore.snapshots" :key="snap.id" :value="snap.id">{{ snap.label }}</option>
           </select>
         </label>
         <label class="field field-grow">
-          B
+          {{ t('fixed.B') }}
           <select v-model="diffB">
-            <option value="" disabled>Choose…</option>
+            <option value="" disabled>{{ t('ui.choose') }}</option>
             <option v-for="snap in sysexExplorerStore.snapshots" :key="snap.id" :value="snap.id">{{ snap.label }}</option>
           </select>
         </label>
-        <button class="tecla btn" :disabled="!diffA || !diffB" @click="runDiff">Diff</button>
+        <button class="tecla btn" :disabled="!diffA || !diffB" @click="runDiff">{{ t('ui.diff') }}</button>
       </div>
       <div v-if="sysexExplorerStore.diff">
         <p class="hint">
           {{ snapshotLabelFor(sysexExplorerStore.diff.aId) }} → {{ snapshotLabelFor(sysexExplorerStore.diff.bId) }}
-          — layout {{ sysexExplorerStore.diff.layoutId }}
+          {{ t('ui.layout') }} {{ sysexExplorerStore.diff.layoutId }}
         </p>
         <div class="table-scroll" v-if="sysexExplorerStore.diff.result.params.length > 0">
           <table class="mono-table">
             <thead>
-              <tr><th>group:index</th><th>Before</th><th>After</th></tr>
+              <tr><th>{{ t('ui.group_index') }}</th><th>{{ t('ui.before') }}</th><th>{{ t('ui.after') }}</th></tr>
             </thead>
             <tbody>
               <tr v-for="entry in sysexExplorerStore.diff.result.params" :key="entry.key">
@@ -487,14 +488,14 @@ function formatLogTime(at: number): string {
         <div class="table-scroll" v-if="sysexExplorerStore.diff.result.payload.length > 0">
           <table class="mono-table">
             <thead>
-              <tr><th>Payload offset</th><th>Field</th><th>Before</th><th>After</th></tr>
+              <tr><th>{{ t('ui.payload_offset') }}</th><th>{{ t('ui.field') }}</th><th>{{ t('ui.before') }}</th><th>{{ t('ui.after') }}</th></tr>
             </thead>
             <tbody>
               <tr v-for="entry in sysexExplorerStore.diff.payload" :key="entry.offset">
                 <td>{{ entry.offset }}</td>
                 <td :class="{ 'field-unknown': entry.kind === 'unknown' }">
-                  {{ entry.field }}
-                  <span class="tag-unverified" v-if="entry.verified === false">unverified</span>
+                  {{ payloadField(entry.field) }}
+                  <span class="tag-unverified" v-if="entry.verified === false">{{ t('ui.unverified') }}</span>
                 </td>
                 <td class="mono">{{ entry.before ?? '—' }}</td>
                 <td class="mono">{{ entry.after ?? '—' }}</td>
@@ -503,37 +504,37 @@ function formatLogTime(at: number): string {
           </table>
         </div>
         <div class="hint" v-if="sysexExplorerStore.diff.result.params.length === 0 && sysexExplorerStore.diff.result.payload.length === 0">
-          No differences.
+          {{ t('ui.no_differences') }}
         </div>
       </div>
     </section>
 
     <!-- Export / import -->
     <section class="sysex-section grupo">
-      <h4 class="t-rotulo">Export / import</h4>
+      <h4 class="t-rotulo">{{ t('ui.export_import') }}</h4>
       <div class="section-row wrap">
-        <button class="tecla btn" @click="exportJson">Export JSON</button>
+        <button class="tecla btn" @click="exportJson">{{ t('ui.export_json') }}</button>
         <input type="file" accept="application/json" @change="onImportFile" />
       </div>
-      <div class="hint hint-error" v-if="importError">{{ importError }}</div>
+      <div class="hint hint-error" v-if="importError">{{ importError() }}</div>
     </section>
 
     <!-- Notes -->
     <section class="sysex-section grupo">
-      <h4 class="t-rotulo">Notes</h4>
-      <textarea v-model="sysexExplorerStore.notes" class="textarea" rows="3" placeholder="Reverse-engineering notes…" />
+      <h4 class="t-rotulo">{{ t('ui.notes') }}</h4>
+      <textarea v-model="sysexExplorerStore.notes" class="textarea" rows="3" :placeholder="t('ui.reverse_engineering_notes')" />
     </section>
 
     <!-- Inbound message log -->
     <section class="sysex-section grupo">
-      <h4 class="t-rotulo">Inbound messages</h4>
+      <h4 class="t-rotulo">{{ t('ui.inbound_messages') }}</h4>
       <div class="log-container">
         <div v-for="(entry, i) in visibleMessageLog" :key="i" class="log-entry">
           <span class="log-timestamp">{{ formatLogTime(entry.at) }}</span>
-          <span class="log-message">{{ entry.description }}</span>
+          <span class="log-message">{{ diagnosticText(entry.description) }}</span>
           <span class="log-hex">{{ entry.hex }}</span>
         </div>
-        <div v-if="visibleMessageLog.length === 0" class="no-logs">No inbound messages yet</div>
+        <div v-if="visibleMessageLog.length === 0" class="no-logs">{{ t('ui.no_inbound_messages_yet') }}</div>
       </div>
     </section>
   </div>

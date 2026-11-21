@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { t, translatedText, errorMessage } from '../i18n';
 import { computed, onUnmounted, ref, watch } from 'vue';
 import type { MixerType } from '../config/midiConfig';
 import { useDeviceSettings, type DeviceLinkState } from '../composables/useDeviceSettings';
@@ -58,7 +59,7 @@ const LINK_LABELS: Record<DeviceLinkState, string> = {
   error: 'Error',
 };
 
-const linkLabel = computed(() => LINK_LABELS[deviceSettings.link.value]);
+const linkLabel = computed(() => translatedText(LINK_LABELS[deviceSettings.link.value]));
 const linkTone = computed<'success' | 'warn' | 'error' | 'idle'>(() => {
   switch (deviceSettings.link.value) {
     case 'open':
@@ -80,17 +81,17 @@ const { linkEnabled } = deviceSettings;
 
 const linkMessage = computed<string | null>(() => {
   if (!deviceSettings.linkEnabled.value) {
-    return 'Editor link is off. Turn it on above to change device settings.';
+    return t('ui.editor_link_is_off_turn_it_on_above_to_change_device_settings');
   }
   switch (deviceSettings.link.value) {
     case 'no-sysex':
-      return 'SysEx permission was not granted. Reload and approve System Exclusive access for this site.';
+      return t('ui.sysex_permission_was_not_granted_reload_and_approve_system_exclusive_access_for_this_');
     case 'no-editor-port':
-      return 'No Zoom “Editor” MIDI port found. Connect the mixer over USB.';
+      return t('ui.no_zoom_editor_midi_port_found_connect_the_mixer_over_usb');
     case 'suspended':
-      return 'The editor link is suspended (USB file transfer). Reconnect the device to resume.';
+      return t('ui.the_editor_link_is_suspended_usb_file_transfer_reconnect_the_device_to_resume');
     case 'error':
-      return deviceSettings.lastError.value ?? 'The editor link hit an error.';
+      return deviceSettings.lastError.value ? errorMessage(deviceSettings.lastError.value) : t('ui.the_editor_link_hit_an_error');
     default:
       return null;
   }
@@ -171,7 +172,7 @@ const massStorageBusy = ref(false);
 const massStorageCooldown = ref(false);
 let massStorageCooldownTimer: ReturnType<typeof window.setTimeout> | undefined;
 
-const massStorageNotice = ref('');
+const massStorageNotice = ref<(() => string) | null>(null);
 const massStorageNoticeVariant = ref<'success' | 'error'>('success');
 
 const massStorageButtonsLocked = computed(
@@ -201,17 +202,17 @@ const massStorageHandshakeWaitReady = computed(
 );
 
 async function applyMassStorage(enable: boolean) {
-  massStorageNotice.value = '';
+  massStorageNotice.value = null;
   if (!massStorageOutReady.value) {
     massStorageNoticeVariant.value = 'error';
-    massStorageNotice.value =
-      'No MIDI output available for SysEx. Connect Mixer Control or ensure a Zoom “Editor” output appears in the device list.';
+    massStorageNotice.value = () =>
+      t('ui.no_midi_output_available_for_sysex_connect_mixer_control_or_ensure_a_zoom_editor_outp');
     return;
   }
   if (!sysexReady.value) {
     massStorageNoticeVariant.value = 'error';
-    massStorageNotice.value =
-      'System Exclusive is not enabled. Reload the app and allow SysEx when the browser prompts.';
+    massStorageNotice.value = () =>
+      t('ui.system_exclusive_is_not_enabled_reload_the_app_and_allow_sysex_when_the_browser_promp');
     return;
   }
   startMassStorageCooldown();
@@ -228,12 +229,12 @@ async function applyMassStorage(enable: boolean) {
         : undefined,
     });
     massStorageNoticeVariant.value = 'success';
-    massStorageNotice.value = enable
-      ? 'Command sent. The L6 should appear as a USB drive (SD card access) in the host file manager.'
-      : 'Command sent. The L6 USB storage will disconnect.';
+    massStorageNotice.value = () => enable
+      ? t('ui.command_sent_the_l6_should_appear_as_a_usb_drive_sd_card_access_in_the_host_file_mana')
+      : t('ui.command_sent_the_l6_usb_storage_will_disconnect');
   } catch (e) {
     massStorageNoticeVariant.value = 'error';
-    massStorageNotice.value = e instanceof Error ? e.message : String(e);
+    massStorageNotice.value = () => errorMessage(e);
     // The handshake failed, so no USB re-enumeration will fire the reconnect watcher that
     // normally clears the suspension. Resume the editor link here or it stays wedged shut.
     await deviceSettings.resume();
@@ -255,7 +256,7 @@ onUnmounted(() => {
         <label class="tecla editor-link-toggle" :class="{ on: linkEnabled }">
           <input type="checkbox" v-model="linkEnabled" class="sr-only" />
           <i class="lampara blanco" aria-hidden="true"></i>
-          <span>Editor link</span>
+          <span>{{ t('ui.editor_link') }}</span>
         </label>
         <span class="link-status" :class="`link-status--${linkTone}`">
           <i
@@ -272,26 +273,26 @@ onUnmounted(() => {
           <span>
             {{ linkLabel }}
             <template v-if="linkOpen && deviceSettings.firmware.value">
-              · fw {{ deviceSettings.firmware.value }}
+              {{ t('ui.fw') }} {{ deviceSettings.firmware.value }}
             </template>
           </span>
         </span>
       </div>
       <p class="setting-hint">
-        Turn off before launching the official ZOOM L6 Editor.
+        {{ t('ui.turn_off_before_launching_the_official_zoom_l6_editor') }}
       </p>
     </div>
 
     <DeviceNotice
       variant="info"
       subtle
-      text="Changes apply to the mixer immediately; they are not part of Save."
+      :text="t('ui.changes_apply_to_the_mixer_immediately_they_are_not_part_of_save')"
     />
     <DeviceNotice v-if="linkMessage" subtle variant="warn" :text="linkMessage" />
 
     <!-- MIDI -->
     <section v-if="midiIds.length" class="grupo device-settings-group">
-      <h4 class="t-rotulo">MIDI</h4>
+      <h4 class="t-rotulo">{{ t('fixed.MIDI') }}</h4>
       <div class="param-list">
         <DeviceParamField
           v-for="id in midiIds"
@@ -302,14 +303,13 @@ onUnmounted(() => {
         />
       </div>
       <p v-if="midiIds.includes('midiChannel')" class="setting-hint">
-        MIDI Channel is shared by the app and the mixer: the mixer updates immediately and all app
-        controls switch on Save. Cancel puts the mixer's channel back.
+        {{ t('ui.midi_channel_is_shared_by_the_app_and_the_mixer_the_mixer_updates_immediately_and_all') }}
       </p>
     </section>
 
     <!-- Power -->
     <section v-if="powerIds.length" class="grupo device-settings-group">
-      <h4 class="t-rotulo">Power</h4>
+      <h4 class="t-rotulo">{{ t('ui.power') }}</h4>
       <div class="param-list">
         <DeviceParamField
           v-for="id in powerIds"
@@ -321,7 +321,7 @@ onUnmounted(() => {
 
     <!-- Recorder -->
     <section v-if="recorderIds.length" class="grupo device-settings-group">
-      <h4 class="t-rotulo">Recorder</h4>
+      <h4 class="t-rotulo">{{ t('ui.recorder') }}</h4>
       <div class="param-list">
         <DeviceParamField
           v-for="id in recorderIds"
@@ -333,11 +333,11 @@ onUnmounted(() => {
 
     <!-- System info -->
     <section class="grupo device-settings-group">
-      <h4 class="t-rotulo">System info</h4>
+      <h4 class="t-rotulo">{{ t('ui.system_info') }}</h4>
       <div class="param-list">
         <div class="device-param-field--static">
           <div class="device-param-field__label-row">
-            <label class="device-param-field__label">Firmware</label>
+            <label class="device-param-field__label">{{ t('ui.firmware') }}</label>
           </div>
           <div class="device-param-field__control">
             <span class="device-param-field__value">{{ deviceSettings.firmware.value ?? '--' }}</span>
@@ -348,7 +348,7 @@ onUnmounted(() => {
 
     <!-- L6max routing / USB -->
     <section v-if="showL6MaxGroup" class="grupo device-settings-group">
-      <h4 class="t-rotulo">L6max routing / USB</h4>
+      <h4 class="t-rotulo">{{ t('ui.l6max_routing_usb') }}</h4>
       <div class="param-list">
         <DeviceParamField
           v-for="id in l6MaxIds"
@@ -360,16 +360,16 @@ onUnmounted(() => {
 
     <!-- AUX send points -->
     <section v-if="showAuxGroup" class="grupo device-settings-group">
-      <h4 class="t-rotulo">AUX send points</h4>
+      <h4 class="t-rotulo">{{ t('ui.aux_send_points') }}</h4>
       <div class="param-grid param-grid--2col">
         <template v-for="row in auxRows" :key="row.ch">
           <DeviceParamField
             v-if="row.aux1Id"
             :param-id="row.aux1Id"
-            :label="`AUX1 ch ${row.ch}`"
+            :label="`AUX 1 · ${t('channel', { n: row.ch })}`"
           />
           <div v-else class="param-grid__spacer"></div>
-          <DeviceParamField v-if="row.aux2Id" :param-id="row.aux2Id" :label="`AUX2 ch ${row.ch}`" />
+          <DeviceParamField v-if="row.aux2Id" :param-id="row.aux2Id" :label="`AUX 2 · ${t('channel', { n: row.ch })}`" />
           <div v-else class="param-grid__spacer"></div>
         </template>
       </div>
@@ -377,23 +377,22 @@ onUnmounted(() => {
 
     <!-- USB mass storage -->
     <section class="grupo device-settings-group">
-      <h4 class="t-rotulo">USB mass storage</h4>
+      <h4 class="t-rotulo">{{ t('ui.usb_mass_storage') }}</h4>
       <p class="mass-storage-intro">
-        Toggle USB file transfer (SD card as a drive). The device will disconnect and re-enumerate on USB when you switch modes. If it gets stuck try ejecting the device on the host or disable from the official Zoom L6 app.
+        {{ t('ui.toggle_usb_file_transfer_sd_card_as_a_drive_the_device_will_disconnect_and_re_enumera') }}
       </p>
       <DeviceNotice v-if="!sysexReady" subtle variant="warn">
-        SysEx permission was not granted. Reload and approve System Exclusive access for this site.
+        {{ t('ui.sysex_permission_was_not_granted_reload_and_approve_system_exclusive_access_for_this_') }}
       </DeviceNotice>
       <DeviceNotice v-else-if="!massStorageOutReady" subtle variant="info">
-        Connect a MIDI output (Mixer Control) or ensure a Zoom Editor output appears in the list.
+        {{ t('ui.connect_a_midi_output_mixer_control_or_ensure_a_zoom_editor_output_appears_in_the_lis') }}
       </DeviceNotice>
       <DeviceNotice
         v-else-if="!massStorageHandshakeWaitReady"
         subtle
         variant="warn"
       >
-        SysEx replies won’t be waited on: allow SysEx and connect a MIDI input or ensure an Editor
-        input exists. Commands still send with fixed delays.
+        {{ t('ui.sysex_replies_won_t_be_waited_on_allow_sysex_and_connect_a_midi_input_or_ensure_an_ed') }}
       </DeviceNotice>
       <div class="mass-storage-actions">
         <button
@@ -402,7 +401,7 @@ onUnmounted(() => {
           :disabled="massStorageButtonsLocked || !massStorageOutReady || !sysexReady"
           @click="applyMassStorage(true)"
         >
-          {{ massStorageBusy ? 'Sending…' : massStorageCooldown ? 'Wait…' : 'Enable mass storage' }}
+          {{ massStorageBusy ? t('ui.sending') : massStorageCooldown ? t('ui.wait') : t('ui.enable_mass_storage') }}
         </button>
         <button
           type="button"
@@ -410,13 +409,13 @@ onUnmounted(() => {
           :disabled="massStorageButtonsLocked || !massStorageOutReady || !sysexReady"
           @click="applyMassStorage(false)"
         >
-          {{ massStorageBusy ? 'Sending…' : massStorageCooldown ? 'Wait…' : 'Disable mass storage' }}
+          {{ massStorageBusy ? t('ui.sending') : massStorageCooldown ? t('ui.wait') : t('ui.disable_mass_storage') }}
         </button>
       </div>
       <DeviceNotice
         v-if="massStorageNotice"
         :variant="massStorageNoticeVariant"
-        :text="massStorageNotice"
+        :text="massStorageNotice()"
       />
     </section>
   </div>

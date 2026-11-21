@@ -5,9 +5,10 @@
       class="cinta"
       :class="{ vacia }"
       contenteditable="plaintext-only"
+      :data-placeholder="t('tapePlaceholder')"
       spellcheck="false"
       role="textbox"
-      :aria-label="`Cinta del canal ${canal}`"
+      :aria-label="t('tapeChannel', { n: canal })"
       :style="{ '--giro': giro + 'deg', '--tela': TELAS[cinta.color] }"
       @focus="alEnfocar"
       @blur="alSalir"
@@ -15,14 +16,14 @@
       @input="alEscribir"
       @keydown.stop="alTeclear"
     ></div>
-    <div v-if="enfocada" class="cinta-colores" aria-label="Color de la cinta">
+    <div v-if="enfocada" class="cinta-colores" :aria-label="t('ui.tape_color')">
       <button
         v-for="(tela, i) in TELAS"
         :key="tela"
         type="button"
         :class="{ on: i === cinta.color }"
         :style="{ background: tela }"
-        :aria-label="`Color de cinta ${i + 1}`"
+        :aria-label="t('tapeColor', { n: i + 1 })"
         @pointerdown.prevent
         @click="cinta.color = i"
       ></button>
@@ -31,6 +32,7 @@
 </template>
 
 <script setup lang="ts">
+import { t } from '../i18n';
 // Cinta gaffer con rotulador: el nombre de lo que va en el canal, escrito a mano.
 import { computed, nextTick, onMounted, ref, watch } from 'vue';
 import { CINTA_MAX, TELAS, cintaDe } from '../stores/ui';
@@ -122,7 +124,7 @@ watch(() => cinta.color, ajusta);
 }
 .cinta.vacia { filter: none; font: 600 10.5px/1 var(--f-panel); letter-spacing: 0.14em; color: var(--inactivo); padding: 9px 10px; border: 1px dashed var(--inactivo); border-radius: 3px; transform: none; }
 .cinta.vacia::before { display: none; }
-.cinta.vacia:empty::after { content: "PEGAR CINTA"; }
+.cinta.vacia:empty::after { content: attr(data-placeholder); }
 .cinta-colores { position: absolute; left: 50%; bottom: calc(100% + 6px); transform: translateX(-50%); z-index: 10; display: flex; gap: 6px; padding: 6px; border-radius: 8px; background: #0e0d0c; border: 1px solid #44403b; }
 .cinta-colores button { width: 20px; height: 20px; padding: 0; border: 0; border-radius: 4px; box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.5); cursor: pointer; }
 .cinta-colores button.on { outline: 2px solid var(--vfd); outline-offset: 1px; }

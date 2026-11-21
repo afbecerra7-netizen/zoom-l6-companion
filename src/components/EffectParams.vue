@@ -6,6 +6,7 @@
 </template>
 
 <script setup lang="ts">
+import { errorMessage } from '../i18n';
 import { computed, onUnmounted, watch } from 'vue';
 import ParamKnob from './ParamKnob.vue';
 import DeviceNotice from './DeviceNotice.vue';
@@ -64,7 +65,7 @@ const shouldRender = computed(() => visibleIds.value.length > 0);
 const firstError = computed<string | null>(() => {
   for (const id of visibleIds.value) {
     const message = deviceSettings.errors[id];
-    if (message) return message;
+    if (message) return errorMessage(message);
   }
   return null;
 });

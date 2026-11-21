@@ -1,6 +1,6 @@
 <template>
   <div class="grupo sound-pads">
-    <h2 class="t-rotulo">Sound pads</h2>
+    <h2 class="t-rotulo">{{ t('ui.sound_pads_2') }}</h2>
     <div class="pads">
       <!-- aria-disabled (not `disabled`) so the tooltip still shows on unmapped pads in every browser -->
       <button
@@ -9,19 +9,20 @@
         type="button"
         class="tecla pad"
         :aria-disabled="isUnmapped(pad)"
-        :title="isUnmapped(pad) ? UNMAPPED_TOOLTIP : undefined"
+        :title="isUnmapped(pad) ? t('ui.this_pad_is_not_mapped_assign_it_a_midi_note_in_advanced_settings_sound_pads_to_enabl') : undefined"
         @pointerdown="noteOn(pad)"
         @pointerup="noteOff(pad)"
         @pointercancel="noteOff(pad)"
       >
         <span class="pad-id">{{ pad.id }}</span>
-        <span class="pad-nota">{{ isUnmapped(pad) ? 'sin nota' : midiNoteLabel(pad.note) }}</span>
+        <span class="pad-nota">{{ isUnmapped(pad) ? t('ui.no_note') : midiNoteLabel(pad.note) }}</span>
       </button>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
+import { t } from '../i18n';
 import { PAD_NOTE_NOT_MAPPED, midiNoteLabel, type SoundPad } from '../config/midiConfig';
 import { midiService } from '../services/midiService';
 
@@ -30,9 +31,6 @@ interface Props {
 }
 
 const props = defineProps<Props>();
-
-const UNMAPPED_TOOLTIP =
-  'This pad is Not Mapped. Assign it a MIDI note in Advanced Settings ▸ Sound Pads to enable it.';
 
 function isUnmapped(pad: { note: number }): boolean {
   return pad.note === PAD_NOTE_NOT_MAPPED;

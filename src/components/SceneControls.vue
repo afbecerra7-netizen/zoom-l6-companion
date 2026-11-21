@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { t } from '../i18n';
 import { ref, onMounted, onUnmounted, computed } from 'vue';
 import { midiService } from '../services/midiService';
 import { useDeviceSettings } from '../composables/useDeviceSettings';
@@ -92,8 +93,8 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="escenas" role="radiogroup" aria-label="Escena">
-    <span class="escenas-rotulo">Escena</span>
+  <div class="escenas" role="radiogroup" :aria-label="t('ui.scene')">
+    <span class="escenas-rotulo">{{ t('ui.scene') }}</span>
     <button
       v-for="scene in activeSceneControls"
       :key="scene.id"
@@ -103,7 +104,7 @@ onUnmounted(() => {
       role="radio"
       :aria-checked="currentScene?.id === scene.id"
       :disabled="!isConnected"
-      :title="`${scene.name} (PC ${scene.program})`"
+      :title="t('sceneTitle', { id: scene.id, program: scene.program })"
       @click="selectScene(scene)"
     >
       {{ scene.id }}

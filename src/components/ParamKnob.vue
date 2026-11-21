@@ -6,7 +6,8 @@
       :class="{ active: isDragging }"
       tabindex="0"
       role="slider"
-      :aria-label="def.label"
+      :aria-label="paramLabel(paramId)"
+      :title="paramDescription(paramId)"
       :aria-valuemin="def.range.min"
       :aria-valuemax="def.range.max"
       :aria-valuenow="displayNumber ?? undefined"
@@ -28,12 +29,13 @@
         :title="statusTitle"
       ></span>
     </div>
-    <span class="perilla-nombre">{{ def.label }}</span>
+    <span class="perilla-nombre">{{ paramLabel(paramId) }}</span>
     <span class="perilla-valor">{{ displayText }}</span>
   </div>
 </template>
 
 <script setup lang="ts">
+import { t, paramLabel, paramDescription, translatedText, errorMessage } from '../i18n';
 import { computed, onUnmounted, ref } from 'vue';
 import { getParam, type ParamId } from '../midi/sysex/zoomL6/params';
 import { useDeviceSettings } from '../composables/useDeviceSettings';
@@ -82,7 +84,7 @@ const displayText = computed(() => {
   const value = displayNumber.value;
   if (value === undefined) return '--';
   const special = def.value.specialValues?.[value];
-  if (special) return special;
+  if (special) return translatedText(special);
   const rounded = Math.round(value);
   return def.value.range.unit ? `${rounded} ${def.value.range.unit}` : `${rounded}`;
 });
@@ -101,7 +103,7 @@ const statusDotClass = computed(() => ({
   writing: status.value === 'writing',
   error: status.value === 'error',
 }));
-const statusTitle = computed(() => (status.value === 'error' ? errorText.value ?? 'Error' : undefined));
+const statusTitle = computed(() => (status.value === 'error' ? errorMessage(errorText.value) : undefined));
 
 function snapToStep(value: number, step?: number): number {
   const s = step ?? 1;

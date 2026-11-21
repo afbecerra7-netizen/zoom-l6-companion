@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { t, language, translatedText, errorMessage } from '../i18n';
 import { ref, reactive, computed, watch, onUnmounted } from 'vue';
 import type { ChannelControls, GlobalControls, SoundPad, MixerType } from '../config/midiConfig';
 import { PAD_NOTE_NOT_MAPPED, midiNoteLabel } from '../config/midiConfig';
@@ -227,8 +228,8 @@ function padFile(padIndex: number): PadFileInfo | undefined {
 function padFileLabel(padIndex: number): string {
   const file = padFile(padIndex);
   if (!file) return '—';
-  if (!file.assigned) return 'No file';
-  return file.fileName ?? 'Assigned';
+  if (!file.assigned) return t('ui.no_file');
+  return file.fileName ?? t('ui.assigned');
 }
 
 const padDeviceError = computed<string | null>(() => {
@@ -236,7 +237,7 @@ const padDeviceError = computed<string | null>(() => {
   for (let padIndex = 0; padIndex < editableSoundPads.length; padIndex++) {
     for (const field of fields) {
       const error = deviceSettings.errors[padParam(padIndex, field)];
-      if (error) return `Pad ${padIndex + 1}: ${error}`;
+      if (error) return t('padError', { n: padIndex + 1, message: errorMessage(error) });
     }
   }
   return null;
@@ -265,7 +266,7 @@ onUnmounted(() => {
 
 // Reset to defaults
 function resetToDefaults() {
-  if (confirm('Are you sure you want to reset all MIDI mappings to their defaults? This will also clear your saved settings.')) {
+  if (confirm(t('ui.are_you_sure_you_want_to_reset_all_midi_mappings_to_their_defaults_this_will_also_cle'))) {
     // Use defaults based on selected mixer type
     const defaults = mixerTypeOverride.value === 'l6max' 
       ? {
@@ -305,10 +306,10 @@ async function saveChanges() {
   // Warn about duplicates
   if (hasDuplicateCCs.value || hasDuplicateNotes.value) {
     const warnings = [];
-    if (hasDuplicateCCs.value) warnings.push('duplicate CC assignments');
-    if (hasDuplicateNotes.value) warnings.push('duplicate note assignments');
+    if (hasDuplicateCCs.value) warnings.push(t('ui.duplicate_cc_assignments'));
+    if (hasDuplicateNotes.value) warnings.push(t('ui.duplicate_note_assignments'));
     
-    if (!confirm(`Warning: You have ${warnings.join(' and ')}. This may cause unexpected behavior. Save anyway?`)) {
+    if (!confirm(t('duplicateWarning', { warnings: warnings.join(', ') }))) {
       return;
     }
   }
@@ -353,7 +354,7 @@ async function saveChanges() {
 
 // Close without saving
 async function cancel() {
-  if (confirm('Are you sure? Any unsaved changes will be lost.')) {
+  if (confirm(t('ui.discard_unsaved_changes_mixer_settings_applied_immediately_will_remain_the_previous_s'))) {
     // Pad notes / MIDI channel were already sent to the mixer; put them back the way they were.
     await syncMixer({ padNotes: originalPadNotes, midiChannel: originalMidiChannel });
     emit('close');
@@ -396,33 +397,40 @@ watch(() => props.isVisible, (visible) => {
     <div v-if="isVisible" class="advanced-settings-overlay" @click.self="cancel">
       <div class="advanced-settings-dialog" role="dialog" aria-modal="true" aria-labelledby="advanced-settings-title">
         <div class="dialog-header">
-          <h2 id="advanced-settings-title">Advanced Settings</h2>
-          <button type="button" class="tecla close-button" @click="cancel" title="Close" aria-label="Close">×</button>
+          <h2 id="advanced-settings-title">{{ t('ui.advanced_settings') }}</h2>
+          <button type="button" class="tecla close-button" @click="cancel" :title="t('ui.close')" :aria-label="t('ui.close')">×</button>
         </div>
 
         <div class="dialog-content">
+          <div class="grupo global-setting">
+            <label for="app-language" class="t-rotulo">{{ t('language') }}</label>
+            <select id="app-language" v-model="language" class="setting-select">
+              <option value="es">{{ t('language.es') }}</option>
+              <option value="en">{{ t('language.en') }}</option>
+            </select>
+          </div>
           <p class="banner banner--warn">
             <i class="lampara ambar on" aria-hidden="true"></i>
-            <span>Changing these settings may cause conflicts. Only modify if you know what you're doing.</span>
+            <span>{{ t('ui.cc_identifies_each_midi_control_change_assignments_only_to_match_your_mixer_duplicate') }}</span>
           </p>
 
           <p v-if="hasCustomSettings" class="banner banner--info">
             <i class="lampara blanco on" aria-hidden="true"></i>
-            <span>Custom settings loaded from browser storage</span>
+            <span>{{ t('ui.custom_settings_loaded_from_browser_storage') }}</span>
           </p>
 
           <!-- Mixer Type Override -->
           <div class="grupo global-setting">
-            <label for="mixer-type" class="t-rotulo">Mixer Type Override</label>
+            <label for="mixer-type" class="t-rotulo">{{ t('ui.mixer_type_override') }}</label>
             <select
               id="mixer-type"
               v-model="mixerTypeOverride"
               class="setting-select"
             >
-              <option value="l6">L6 (8 channels, 3 scenes)</option>
-              <option value="l6max">L6Max (8 channels: 4 mono + 4 stereo, 4 scenes, subMix sends)</option>
+              <option value="l6">{{ t('ui.l6_6_channels_3_scenes') }}</option>
+              <option value="l6max">{{ t('ui.l6max_8_channels_4_mono_4_stereo_4_scenes_submix_sends') }}</option>
             </select>
-            <p class="setting-hint">Override the auto-detected mixer type. Changing this will affect available controls.</p>
+            <p class="setting-hint">{{ t('ui.override_the_auto_detected_mixer_type_changing_this_will_affect_available_controls') }}</p>
           </div>
 
           <!-- Device Settings (SysEx, mass storage, editor link) -->
@@ -434,7 +442,7 @@ watch(() => props.isVisible, (visible) => {
                 :aria-expanded="expandedSections.device"
                 @click="toggleSection('device')"
               >
-                <span>Device Settings</span>
+                <span>{{ t('ui.device_settings') }}</span>
                 <span class="toggle-icon" aria-hidden="true">{{ expandedSections.device ? '▾' : '▸' }}</span>
               </button>
             </h3>
@@ -458,19 +466,19 @@ watch(() => props.isVisible, (visible) => {
                 :aria-expanded="expandedSections.channels"
                 @click="toggleSection('channels')"
               >
-                <span>Channel Controls</span>
+                <span>{{ t('ui.channel_controls') }}</span>
                 <span class="toggle-icon" aria-hidden="true">{{ expandedSections.channels ? '▾' : '▸' }}</span>
               </button>
             </h3>
 
             <div v-if="expandedSections.channels" class="section-content section-stack">
               <div v-for="channel in editableChannelControls" :key="channel.channel" class="grupo channel-group">
-                <h4 class="t-rotulo">Channel {{ channel.channel }}</h4>
+                <h4 class="t-rotulo">{{ t('ui.channel') }} {{ channel.channel }}</h4>
 
                 <div class="controls-grid">
                   <!-- Volume -->
                   <div class="control-row">
-                    <label>Volume (CC)</label>
+                    <label>{{ t('ui.volume_cc') }}</label>
                     <input
                       type="number"
                       v-model.number="channel.controls.volume.cc"
@@ -482,7 +490,7 @@ watch(() => props.isVisible, (visible) => {
 
                   <!-- Pan -->
                   <div class="control-row">
-                    <label>Pan (CC)</label>
+                    <label>{{ t('ui.pan_cc') }}</label>
                     <input
                       type="number"
                       v-model.number="channel.controls.pan.cc"
@@ -494,7 +502,7 @@ watch(() => props.isVisible, (visible) => {
 
                   <!-- EQ High -->
                   <div class="control-row">
-                    <label>EQ High (CC)</label>
+                    <label>{{ t('ui.eq_high_cc') }}</label>
                     <input
                       type="number"
                       v-model.number="channel.controls.eq.high.cc"
@@ -506,7 +514,7 @@ watch(() => props.isVisible, (visible) => {
 
                   <!-- EQ Mid -->
                   <div class="control-row">
-                    <label>EQ Mid (CC)</label>
+                    <label>{{ t('ui.eq_mid_cc') }}</label>
                     <input
                       type="number"
                       v-model.number="channel.controls.eq.mid.cc"
@@ -518,7 +526,7 @@ watch(() => props.isVisible, (visible) => {
 
                   <!-- EQ Mid Freq -->
                   <div class="control-row">
-                    <label>EQ Mid Freq (CC)</label>
+                    <label>{{ t('ui.eq_mid_freq_cc') }}</label>
                     <input
                       type="number"
                       v-model.number="channel.controls.eq.midFreq.cc"
@@ -530,7 +538,7 @@ watch(() => props.isVisible, (visible) => {
 
                   <!-- EQ Low -->
                   <div class="control-row">
-                    <label>EQ Low (CC)</label>
+                    <label>{{ t('ui.eq_low_cc') }}</label>
                     <input
                       type="number"
                       v-model.number="channel.controls.eq.low.cc"
@@ -542,7 +550,7 @@ watch(() => props.isVisible, (visible) => {
 
                   <!-- AUX1 -->
                   <div class="control-row">
-                    <label>AUX1 (CC)</label>
+                    <label>{{ t('ui.aux1_cc') }}</label>
                     <input
                       type="number"
                       v-model.number="channel.controls.aux1.cc"
@@ -554,7 +562,7 @@ watch(() => props.isVisible, (visible) => {
 
                   <!-- AUX2 -->
                   <div class="control-row">
-                    <label>AUX2 (CC)</label>
+                    <label>{{ t('ui.aux2_cc') }}</label>
                     <input
                       type="number"
                       v-model.number="channel.controls.aux2.cc"
@@ -566,7 +574,7 @@ watch(() => props.isVisible, (visible) => {
 
                   <!-- EFX Send -->
                   <div class="control-row">
-                    <label>EFX Send (CC)</label>
+                    <label>{{ t('ui.efx_send_cc') }}</label>
                     <input
                       type="number"
                       v-model.number="channel.controls.efxSend.cc"
@@ -578,7 +586,7 @@ watch(() => props.isVisible, (visible) => {
 
                   <!-- SUB MIX (if exists) -->
                   <div v-if="channel.controls.subMix" class="control-row">
-                    <label>SUB MIX (CC)</label>
+                    <label>{{ t('ui.sub_mix_cc') }}</label>
                     <input
                       type="number"
                       v-model.number="channel.controls.subMix.cc"
@@ -590,7 +598,7 @@ watch(() => props.isVisible, (visible) => {
 
                   <!-- Mute -->
                   <div class="control-row">
-                    <label>Mute (CC)</label>
+                    <label>{{ t('ui.mute_cc') }}</label>
                     <input
                       type="number"
                       v-model.number="channel.controls.mute.cc"
@@ -602,7 +610,7 @@ watch(() => props.isVisible, (visible) => {
 
                   <!-- MONO x2 (if exists) -->
                   <div v-if="channel.controls.monoX2" class="control-row">
-                    <label>MONO x2 (CC)</label>
+                    <label>{{ t('ui.mono_x2_cc') }}</label>
                     <input
                       type="number"
                       v-model.number="channel.controls.monoX2.cc"
@@ -614,7 +622,7 @@ watch(() => props.isVisible, (visible) => {
 
                   <!-- USB 1/2 (if exists) -->
                   <div v-if="channel.controls.usb12" class="control-row">
-                    <label>USB 1/2 (CC)</label>
+                    <label>{{ t('ui.usb_1_2_cc') }}</label>
                     <input
                       type="number"
                       v-model.number="channel.controls.usb12.cc"
@@ -626,7 +634,7 @@ watch(() => props.isVisible, (visible) => {
 
                   <!-- USB 3/4 (if exists) -->
                   <div v-if="channel.controls.usb34" class="control-row">
-                    <label>USB 3/4 (CC)</label>
+                    <label>{{ t('ui.usb_3_4_cc') }}</label>
                     <input
                       type="number"
                       v-model.number="channel.controls.usb34.cc"
@@ -638,7 +646,7 @@ watch(() => props.isVisible, (visible) => {
 
                   <!-- MIDI Channel -->
                   <div class="control-row highlight">
-                    <label>MIDI Channel</label>
+                    <label>{{ t('ui.midi_channel_2') }}</label>
                     <input
                       type="number"
                       v-model.number="channel.controls.volume.channel"
@@ -661,7 +669,7 @@ watch(() => props.isVisible, (visible) => {
                 :aria-expanded="expandedSections.global"
                 @click="toggleSection('global')"
               >
-                <span>Global Controls</span>
+                <span>{{ t('ui.global_controls') }}</span>
                 <span class="toggle-icon" aria-hidden="true">{{ expandedSections.global ? '▾' : '▸' }}</span>
               </button>
             </h3>
@@ -671,7 +679,7 @@ watch(() => props.isVisible, (visible) => {
                 <div class="controls-grid">
                   <!-- EFX Type -->
                   <div class="control-row">
-                    <label>EFX Type (CC)</label>
+                    <label>{{ t('ui.efx_type_cc') }}</label>
                     <input
                       type="number"
                       v-model.number="editableGlobalControls.efxType.cc"
@@ -683,7 +691,7 @@ watch(() => props.isVisible, (visible) => {
 
                   <!-- Compressor -->
                   <div class="control-row">
-                    <label>Compressor (CC)</label>
+                    <label>{{ t('ui.compressor_cc') }}</label>
                     <input
                       type="number"
                       v-model.number="editableGlobalControls.compressor.cc"
@@ -706,21 +714,20 @@ watch(() => props.isVisible, (visible) => {
                 :aria-expanded="expandedSections.soundPads"
                 @click="toggleSection('soundPads')"
               >
-                <span>Sound Pads</span>
+                <span>{{ t('ui.sound_pads') }}</span>
                 <span class="toggle-icon" aria-hidden="true">{{ expandedSections.soundPads ? '▾' : '▸' }}</span>
               </button>
             </h3>
 
             <div v-if="expandedSections.soundPads" class="section-content section-stack">
               <p class="setting-hint">
-                {{ showPadClockSync ? 'Play mode, level and MIDI clock sync' : 'Play mode and level' }} apply to the mixer immediately.
-                MIDI Note updates the mixer immediately and this app's pad on Save; Cancel puts the mixer's notes back.
+                {{ showPadClockSync ? t('ui.play_mode_level_and_midi_clock_sync') : t('ui.play_mode_and_level') }} {{ t('ui.apply_to_the_mixer_immediately_midi_note_updates_the_mixer_immediately_and_this_app_s') }}
               </p>
               <DeviceNotice
                 v-if="!padLinkWritable"
                 subtle
                 variant="warn"
-                text="Editor link isn't open, so pad settings can't be sent to the mixer. Check Device Settings."
+                :text="t('ui.editor_link_isn_t_open_so_pad_settings_can_t_be_sent_to_the_mixer_check_device_settin')"
               />
               <div class="pad-settings" :class="{ 'pad-settings--clock': showPadClockSync }">
                 <div v-for="(pad, padIndex) in editableSoundPads" :key="pad.id" class="pad-settings-row">
@@ -734,7 +741,7 @@ watch(() => props.isVisible, (visible) => {
                   </div>
 
                   <div class="control-row">
-                    <label>File</label>
+                    <label>{{ t('ui.file') }}</label>
                     <span
                       class="pad-file-name"
                       :class="{ 'pad-file-name--empty': !padFile(padIndex)?.assigned }"
@@ -743,7 +750,7 @@ watch(() => props.isVisible, (visible) => {
                   </div>
 
                   <div class="control-row">
-                    <label :for="`pad-${pad.id}-mode`">Play mode</label>
+                    <label :for="`pad-${pad.id}-mode`">{{ t('ui.play_mode') }}</label>
                     <select
                       :id="`pad-${pad.id}-mode`"
                       class="setting-select"
@@ -751,12 +758,12 @@ watch(() => props.isVisible, (visible) => {
                       :value="padDeviceValue(padIndex, 'mode')"
                       @change="onPadDeviceChange(padIndex, 'mode', $event)"
                     >
-                      <option v-for="opt in PAD_MODE_OPTIONS" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
+                      <option v-for="opt in PAD_MODE_OPTIONS" :key="opt.value" :value="opt.value">{{ translatedText(opt.label) }}</option>
                     </select>
                   </div>
 
                   <div class="control-row">
-                    <label :for="`pad-${pad.id}-level`">Level</label>
+                    <label :for="`pad-${pad.id}-level`">{{ t('ui.level') }}</label>
                     <select
                       :id="`pad-${pad.id}-level`"
                       class="setting-select"
@@ -764,24 +771,24 @@ watch(() => props.isVisible, (visible) => {
                       :value="padDeviceValue(padIndex, 'level')"
                       @change="onPadDeviceChange(padIndex, 'level', $event)"
                     >
-                      <option v-for="opt in PAD_LEVEL_OPTIONS" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
+                      <option v-for="opt in PAD_LEVEL_OPTIONS" :key="opt.value" :value="opt.value">{{ translatedText(opt.label) }}</option>
                     </select>
                   </div>
 
                   <div class="control-row">
-                    <label :for="`pad-${pad.id}-note`">MIDI Note</label>
+                    <label :for="`pad-${pad.id}-note`">{{ t('ui.midi_note') }}</label>
                     <select
                       :id="`pad-${pad.id}-note`"
                       class="setting-select"
                       :value="pad.note"
                       @change="onPadNoteChange(padIndex, $event)"
                     >
-                      <option v-for="opt in PAD_NOTE_OPTIONS" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
+                      <option v-for="opt in PAD_NOTE_OPTIONS" :key="opt.value" :value="opt.value">{{ translatedText(opt.label) }}</option>
                     </select>
                   </div>
 
                   <div v-if="showPadClockSync" class="control-row">
-                    <label :for="`pad-${pad.id}-clock`">MIDI Clock Sync</label>
+                    <label :for="`pad-${pad.id}-clock`">{{ t('ui.midi_clock_sync') }}</label>
                     <select
                       :id="`pad-${pad.id}-clock`"
                       class="setting-select"
@@ -789,7 +796,7 @@ watch(() => props.isVisible, (visible) => {
                       :value="padDeviceValue(padIndex, 'clockSync')"
                       @change="onPadDeviceChange(padIndex, 'clockSync', $event)"
                     >
-                      <option v-for="opt in PAD_CLOCK_SYNC_OPTIONS" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
+                      <option v-for="opt in PAD_CLOCK_SYNC_OPTIONS" :key="opt.value" :value="opt.value">{{ translatedText(opt.label) }}</option>
                     </select>
                   </div>
                 </div>
@@ -801,11 +808,11 @@ watch(() => props.isVisible, (visible) => {
 
         <div class="dialog-footer">
           <button type="button" class="tecla reset-button" @click="resetToDefaults">
-            Reset to Defaults
+            {{ t('ui.reset_to_defaults') }}
           </button>
           <div class="action-buttons">
-            <button type="button" class="tecla cancel-button" @click="cancel">Cancel</button>
-            <button type="button" class="tecla save-button" @click="saveChanges">Save Changes</button>
+            <button type="button" class="tecla cancel-button" @click="cancel">{{ t('ui.cancel') }}</button>
+            <button type="button" class="tecla save-button" @click="saveChanges">{{ t('ui.save_changes') }}</button>
           </div>
         </div>
       </div>

@@ -26,7 +26,7 @@
           type="button"
           class="lfo-btn"
           :class="{ active: lfo.state === 'active', paused: lfo.state === 'paused' }"
-          :title="`LFO de ${etiqueta}`"
+          :title="t('lfoFor', { label: etiqueta })"
           @click.stop="openPopover"
         ></button>
       </div>
@@ -55,7 +55,7 @@
           type="button"
           class="lfo-btn"
           :class="{ active: lfo.state === 'active', paused: lfo.state === 'paused' }"
-          :title="`LFO de ${etiqueta}`"
+          :title="t('lfoFor', { label: etiqueta })"
           @pointerdown.stop
           @click.stop="openPopover"
         ></button>
@@ -100,7 +100,7 @@
         :aria-checked="opcionActiva === option.value"
         @click="handleRadioChange(option.value)"
       >
-        <i class="lampara blanco"></i>{{ option.label }}
+        <i class="lampara blanco"></i>{{ translatedText(option.label) }}
       </button>
     </div>
 
@@ -109,8 +109,8 @@
       <div v-if="showPopover" class="lfo-overlay" @click="closePopover">
         <div class="lfo-dialog" @click.stop>
           <div class="lfo-dialog-header">
-            <div class="lfo-dialog-title">LFO: {{ etiqueta }}</div>
-            <button class="lfo-close" @click="closePopover">×</button>
+            <div class="lfo-dialog-title">{{ t('fixed.LFO_') }} {{ etiqueta }}</div>
+            <button class="lfo-close" :aria-label="t('ui.close')" @click="closePopover">×</button>
           </div>
           <LFOControl :config="lfo" @update:config="updateLfoConfig" />
         </div>
@@ -120,6 +120,7 @@
 </template>
 
 <script setup lang="ts">
+import { t, translatedText } from '../i18n';
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import type { MIDIControl } from '../config/midiConfig';
 import { midiService } from '../services/midiService';
@@ -169,12 +170,12 @@ const dragStartValue = ref(0);
 
 // Computed properties
 const clase = computed(() => props.vista ?? props.control.type);
-const etiqueta = computed(() => props.rotulo ?? props.control.name);
+const etiqueta = computed(() => props.rotulo ?? translatedText(props.control.name));
 const bipolar = computed(() => esBipolar(props.unidad));
 
 const displayValue = computed(() => {
   if (props.control.type === 'toggle') {
-    return currentValue.value > 63 ? 'ON' : 'OFF';
+    return translatedText(currentValue.value > 63 ? 'ON' : 'OFF');
   }
   return props.unidad ? formatea(props.unidad, currentValue.value) : String(Math.round(currentValue.value));
 });

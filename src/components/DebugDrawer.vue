@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { t, language, translatedText, errorMessage, diagnosticText } from '../i18n';
 import { ref, reactive, onMounted, onUnmounted, computed, watch } from 'vue';
 import { midiService } from '../services/midiService';
 import { bytesToHex } from '../midi/sysex';
@@ -80,7 +81,7 @@ const maxLogs = 100;
 const maxMidiLogs = 50;
 
 // Reactive MIDI connection state
-const midiConnected = computed(() => midiService.connectionState.value);
+const midiConnected = computed(() => midiService.midiInputConnected.value && midiService.midiOutputConnected.value);
 
 // Computed properties
 const errorCount = computed(() => props.debugData.errorLogs.length);
@@ -147,7 +148,7 @@ function updateSystemInfo() {
 }
 
 function formatTimestamp(date: Date): string {
-  const timeString = date.toLocaleTimeString('en-US', { 
+  const timeString = date.toLocaleTimeString(language.value === 'es' ? 'es-CO' : 'en-US', {
     hour12: false, 
     hour: '2-digit', 
     minute: '2-digit', 
@@ -394,7 +395,7 @@ watch(() => props.isVisible, (visible) => {
         'has-warnings': hasWarnings && !hasErrors,
         'has-logs': errorCount > 0 || midiCount > 0
       }"
-      :title="`Debug Console (${errorCount} errors, ${midiCount} MIDI messages)`"
+      :title="t('diagnosticTitle', { errors: errorCount, messages: midiCount })"
     >
       <span class="lampara" aria-hidden="true" :class="{
         rojo: hasErrors,
@@ -402,7 +403,7 @@ watch(() => props.isVisible, (visible) => {
         blanco: !hasErrors && !hasWarnings,
         on: hasErrors || hasWarnings || errorCount > 0 || midiCount > 0
       }" />
-      <span>Debug</span>
+      <span>{{ t('ui.diagnostics') }}</span>
       <span class="debug-badge" v-if="errorCount > 0 || midiCount > 0">
         {{ errorCount + midiCount }}
       </span>
@@ -411,19 +412,19 @@ watch(() => props.isVisible, (visible) => {
     <!-- Debug Panel -->
     <div id="debug-panel" class="debug-panel" v-if="isExpanded">
       <div class="debug-header">
-        <h3 class="debug-title t-rotulo">Debug Console</h3>
+        <h3 class="debug-title t-rotulo">{{ t('ui.debug_console') }}</h3>
         <div class="debug-controls">
           <button 
             class="tecla clear-button"
             @click="clearLogs('all')"
-            title="Clear all logs"
+            :title="t('ui.clear_all_logs')"
           >
-            Clear All
+            {{ t('ui.clear_all') }}
           </button>
           <button 
             class="tecla close-button"
             @click="toggleDrawer"
-            title="Close debug console"
+            :title="t('ui.close_debug_console')"
           >
             ×
           </button>
@@ -437,7 +438,7 @@ watch(() => props.isVisible, (visible) => {
           :class="{ activo: activeTab === 'errors' }"
           @click="activeTab = 'errors'"
         >
-          Errors
+          {{ t('ui.errors') }}
           <span class="tab-badge" v-if="errorCount > 0">{{ errorCount }}</span>
         </button>
         <button 
@@ -445,7 +446,7 @@ watch(() => props.isVisible, (visible) => {
           :class="{ activo: activeTab === 'midi' }"
           @click="activeTab = 'midi'"
         >
-          MIDI
+          {{ t('fixed.MIDI') }}
           <span class="tab-badge" v-if="midiCount > 0">{{ midiCount }}</span>
         </button>
         <button
@@ -453,14 +454,14 @@ watch(() => props.isVisible, (visible) => {
           :class="{ activo: activeTab === 'system' }"
           @click="activeTab = 'system'"
         >
-          System
+          {{ t('system') }}
         </button>
         <button
           class="debug-tab boton-barra"
           :class="{ activo: activeTab === 'sysex' }"
           @click="activeTab = 'sysex'"
         >
-          SysEx
+          {{ t('fixed.SysEx') }}
         </button>
       </div>
 
@@ -469,8 +470,8 @@ watch(() => props.isVisible, (visible) => {
         <!-- Errors Tab -->
         <div v-if="activeTab === 'errors'" class="tab-panel">
           <div class="panel-header">
-            <h4 class="t-rotulo">Error Logs</h4>
-            <button class="tecla clear-button small" @click="clearLogs('errors')">Clear</button>
+            <h4 class="t-rotulo">{{ t('ui.error_logs') }}</h4>
+            <button class="tecla clear-button small" @click="clearLogs('errors')">{{ t('ui.clear') }}</button>
           </div>
           <div class="log-container">
             <div 
@@ -481,14 +482,14 @@ watch(() => props.isVisible, (visible) => {
             >
               <div class="log-header">
                 <span class="log-timestamp">{{ formatTimestamp(log.timestamp) }}</span>
-                <span class="log-type">{{ log.type.toUpperCase() }}</span>
+                <span class="log-type">{{ translatedText(log.type).toUpperCase() }}</span>
                 <span class="log-source" v-if="log.source">{{ log.source }}</span>
               </div>
-              <div class="log-message">{{ log.message }}</div>
+              <div class="log-message">{{ errorMessage(log.message) }}</div>
               <div class="log-stack" v-if="log.stack">{{ log.stack }}</div>
             </div>
             <div v-if="props.debugData.errorLogs.length === 0" class="no-logs">
-              No error logs yet
+              {{ t('ui.no_error_logs_yet') }}
             </div>
           </div>
         </div>
@@ -496,8 +497,8 @@ watch(() => props.isVisible, (visible) => {
         <!-- MIDI Tab -->
         <div v-if="activeTab === 'midi'" class="tab-panel">
           <div class="panel-header">
-            <h4 class="t-rotulo">MIDI Messages</h4>
-            <button class="tecla clear-button small" @click="clearLogs('midi')">Clear</button>
+            <h4 class="t-rotulo">{{ t('ui.midi_messages') }}</h4>
+            <button class="tecla clear-button small" @click="clearLogs('midi')">{{ t('ui.clear') }}</button>
           </div>
           <div class="log-container">
             <div 
@@ -511,17 +512,17 @@ watch(() => props.isVisible, (visible) => {
             >
               <div class="log-header">
                 <span class="log-timestamp">{{ formatTimestamp(log.timestamp) }}</span>
-                <span class="log-direction">{{ log.direction.toUpperCase() }}</span>
-                <span class="log-type">{{ log.type.toUpperCase() }}</span>
+                <span class="log-direction">{{ translatedText(log.direction).toUpperCase() }}</span>
+                <span class="log-type">{{ translatedText(log.type).toUpperCase() }}</span>
                 <span class="log-channel">{{ log.type === 'sysex' ? 'SYSEX' : `CH${log.channel}` }}</span>
               </div>
-              <div class="log-message">{{ log.description }}</div>
+              <div class="log-message">{{ diagnosticText(log.description) }}</div>
               <div class="log-data" v-if="log.data">
                 <pre>{{ JSON.stringify(log.data, null, 2) }}</pre>
               </div>
             </div>
             <div v-if="props.debugData.midiLogs.length === 0" class="no-logs">
-              No MIDI messages yet
+              {{ t('ui.no_midi_messages_yet') }}
             </div>
           </div>
         </div>
@@ -529,52 +530,52 @@ watch(() => props.isVisible, (visible) => {
         <!-- System Tab -->
         <div v-if="activeTab === 'system'" class="tab-panel">
           <div class="panel-header">
-            <h4 class="t-rotulo">System Information</h4>
-            <button class="tecla refresh-button small" @click="updateSystemInfo">Refresh</button>
+            <h4 class="t-rotulo">{{ t('ui.system_information') }}</h4>
+            <button class="tecla refresh-button small" @click="updateSystemInfo">{{ t('ui.refresh') }}</button>
           </div>
           <div class="system-info">
             <div class="info-grid">
               <div class="info-item">
-                <span class="info-label">Platform:</span>
+                <span class="info-label">{{ t('ui.platform') }}</span>
                 <span class="info-value">{{ props.debugData.systemInfo.platform }}</span>
               </div>
               <div class="info-item">
-                <span class="info-label">Language:</span>
+                <span class="info-label">{{ t('ui.language') }}</span>
                 <span class="info-value">{{ props.debugData.systemInfo.language }}</span>
               </div>
               <div class="info-item">
-                <span class="info-label">Online:</span>
+                <span class="info-label">{{ t('ui.online') }}</span>
                 <span class="info-value" :class="{ online: props.debugData.systemInfo.onLine, offline: !props.debugData.systemInfo.onLine }">
-                  {{ props.debugData.systemInfo.onLine ? 'Yes' : 'No' }}
+                  {{ props.debugData.systemInfo.onLine ? t('ui.yes') : t('ui.no') }}
                 </span>
               </div>
               <div class="info-item">
-                <span class="info-label">Screen:</span>
+                <span class="info-label">{{ t('ui.screen') }}</span>
                 <span class="info-value">{{ props.debugData.systemInfo.screenResolution }}</span>
               </div>
               <div class="info-item">
-                <span class="info-label">Viewport:</span>
+                <span class="info-label">{{ t('ui.viewport') }}</span>
                 <span class="info-value">{{ props.debugData.systemInfo.viewportSize }}</span>
               </div>
               <div class="info-item">
-                <span class="info-label">Pixel Ratio:</span>
+                <span class="info-label">{{ t('ui.pixel_ratio') }}</span>
                 <span class="info-value">{{ props.debugData.systemInfo.devicePixelRatio }}</span>
               </div>
               <div class="info-item">
-                <span class="info-label">WebMIDI:</span>
+                <span class="info-label">{{ t('ui.webmidi') }}</span>
                 <span class="info-value" :class="{ supported: props.debugData.systemInfo.webMidiSupported, unsupported: !props.debugData.systemInfo.webMidiSupported }">
-                  {{ props.debugData.systemInfo.webMidiSupported ? 'Supported' : 'Not Supported' }}
+                  {{ props.debugData.systemInfo.webMidiSupported ? t('ui.supported') : t('ui.not_supported') }}
                 </span>
               </div>
               <div class="info-item">
-                <span class="info-label">MIDI Connected:</span>
+                <span class="info-label">{{ t('ui.midi_connected') }}</span>
                 <span class="info-value" :class="{ connected: midiConnected, disconnected: !midiConnected }">
-                  {{ midiConnected ? 'Yes' : 'No' }}
+                  {{ midiConnected ? t('ui.yes') : t('ui.no') }}
                 </span>
               </div>
             </div>
             <div class="user-agent">
-              <span class="info-label">User Agent:</span>
+              <span class="info-label">{{ t('ui.user_agent') }}</span>
               <div class="info-value">{{ props.debugData.systemInfo.userAgent }}</div>
             </div>
           </div>

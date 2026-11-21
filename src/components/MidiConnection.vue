@@ -1,23 +1,25 @@
 <template>
   <div class="midi-connection">
     <div class="connection-header">
-      <h3 class="connection-title">MIDI Connection</h3>
-      <div class="connection-status" :class="{ connected: isConnected, error: hasError }">
+      <h3 class="connection-title">{{ t('ui.midi_connection') }}</h3>
+      <div class="connection-status" :title="t('portPair', { input: translatedText(midiService.inputName), output: translatedText(midiService.outputName) })" :class="{ connected: portStatus.complete, partial: isConnected && !portStatus.complete, error: hasError }">
         <span class="status-dot"></span>
         {{ connectionStatus }}
       </div>
     </div>
     
     <div class="connection-content" v-if="isInitialized">
+      <p v-if="portStatus.key === 'missingOutput'" class="loading-message">{{ t('missingOutputHelp') }}</p>
+      <p v-else-if="portStatus.key === 'missingInput'" class="loading-message">{{ t('missingInputHelp') }}</p>
       <!-- Input Selection -->
       <div class="device-section">
-        <label class="device-label">MIDI Input:</label>
+        <label class="device-label">{{ t('ui.midi_input') }}</label>
         <select 
           v-model="selectedInput" 
           @change="connectInput"
           class="device-select"
         >
-          <option value="">Select Input Device</option>
+          <option value="">{{ t('ui.select_input_device') }}</option>
           <option 
             v-for="input in availableInputs" 
             :key="input.id" 
@@ -30,13 +32,13 @@
       
       <!-- Output Selection -->
       <div class="device-section">
-        <label class="device-label">MIDI Output:</label>
+        <label class="device-label">{{ t('ui.midi_output') }}</label>
         <select 
           v-model="selectedOutput" 
           @change="connectOutput"
           class="device-select"
         >
-          <option value="">Select Output Device</option>
+          <option value="">{{ t('ui.select_output_device') }}</option>
           <option 
             v-for="output in availableOutputs" 
             :key="output.id" 
@@ -54,7 +56,7 @@
           class="action-button refresh-button"
           :disabled="isRefreshing"
         >
-          {{ isRefreshing ? 'Refreshing...' : 'Refresh Devices' }}
+          {{ isRefreshing ? t('ui.refreshing') : t('ui.refresh_devices') }}
         </button>
         
         <button 
@@ -62,37 +64,39 @@
           class="action-button disconnect-button"
           :disabled="!isConnected"
         >
-          Disconnect
+          {{ t('ui.disconnect') }}
         </button>
         
         <button 
           @click="autoConnect"
           class="action-button auto-button"
         >
-          Auto-Connect Zoom
+          {{ t('ui.connect_zoom') }}
         </button>
       </div>
     </div>
     
     <div class="connection-content" v-else-if="hasError">
       <div class="error-message">
-        <p>WebMIDI is not supported in this browser or failed to initialize.</p>
-        <p>Please use a modern browser like Chrome, Edge, or Firefox.</p>
+        <p>{{ t('ui.webmidi_is_not_supported_in_this_browser_or_failed_to_initialize') }}</p>
+        <p>{{ t('ui.please_use_a_modern_browser_like_chrome_edge_or_firefox') }}</p>
         <button @click="initializeMidi" class="action-button retry-button">
-          Retry
+          {{ t('ui.retry') }}
         </button>
       </div>
     </div>
     
     <div class="connection-content" v-else>
       <div class="loading-message">
-        <p>Initializing MIDI...</p>
+        <p>{{ t('ui.initializing_midi') }}</p>
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
+import { t, translatedText } from '../i18n';
+import { connectionStatus as describeConnection } from '../i18n/connectionStatus';
 import { ref, onMounted, computed } from 'vue';
 import { midiService } from '../services/midiService';
 import type { Input, Output } from 'webmidi';
@@ -115,12 +119,14 @@ const isConnected = computed(() => {
   return midiService.connectionState.value;
 });
 
+const portStatus = computed(() => describeConnection(midiService.midiInputConnected.value, midiService.midiOutputConnected.value));
 const connectionStatus = computed(() => {
-  if (hasError.value) return 'Error';
-  if (!isInitialized.value) return 'Initializing...';
-  if (!isConnected.value) return 'Disconnected';
-  
-  return `Connected: ${midiService.inputName} → ${midiService.outputName}`;
+  if (hasError.value) return t('ui.error');
+  if (!isInitialized.value) return t('ui.initializing');
+  if (portStatus.value.key === 'missingOutput') return t('missingOutput');
+  if (portStatus.value.key === 'missingInput') return t('missingInput');
+  if (!portStatus.value.complete) return t(portStatus.value.key);
+  return t('connected');
 });
 
 async function initializeMidi() {
@@ -242,6 +248,7 @@ onMounted(() => {
 .connection-status { display: flex; align-items: center; gap: 7px; font: 500 12px/1 var(--f-datos); color: var(--serigrafia-2); }
 .status-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--blanco-off); box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(0, 0, 0, 0.5); }
 .connection-status.connected .status-dot { background: var(--verde); box-shadow: 0 0 9px var(--verde); }
+.connection-status.partial .status-dot { background: var(--ambar); box-shadow: 0 0 9px var(--ambar); }
 .connection-status.error .status-dot { background: var(--rojo); box-shadow: 0 0 9px var(--rojo); }
 .connection-content { display: flex; flex-direction: column; gap: 10px; }
 .device-section { display: grid; grid-template-columns: 110px 1fr; align-items: center; gap: 10px; }

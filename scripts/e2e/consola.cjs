@@ -17,7 +17,7 @@ app.whenReady().then(async () => {
   const r = {}
 
   r.antes = await js(`return { estado: document.querySelector('.estado').innerText.trim(), tiras: document.querySelectorAll('.tira').length, panelVisible: getComputedStyle(document.querySelector('.panel-conexion')).display !== 'none' }`)
-  await js(`[...document.querySelectorAll('button')].find((b) => /Auto-Connect/i.test(b.textContent)).click()`)
+  await js(`[...document.querySelectorAll('button')].find((b) => /Auto-Connect|Conectar Zoom|Connect Zoom/i.test(b.textContent)).click()`)
   await espera(1500)
   r.conectada = await js(`return { estado: document.querySelector('.estado').innerText.trim(), nombre: document.querySelector('.placa-nombre').innerText.replace(/\\n/g, ' / '), tiras: document.querySelectorAll('.tira').length,
     estereo: [...document.querySelectorAll('.tira')].map((t) => t.classList.contains('estereo') ? 'E' : 'M').join(''), panelVisible: getComputedStyle(document.querySelector('.panel-conexion')).display !== 'none',

@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { t, type TranslationKey } from './i18n';
+import { connectionStatus } from './i18n/connectionStatus';
 import { ref, reactive, onMounted, onUnmounted, computed, nextTick, watch } from 'vue';
 import MidiConnection from './components/MidiConnection.vue';
 import ChannelStrip from './components/ChannelStrip.vue';
@@ -47,6 +49,8 @@ const appHost = window.location.host;
 
 // Reactive state
 const midiConnected = ref(false);
+const portStatus = computed(() => connectionStatus(midiService.midiInputConnected.value, midiService.midiOutputConnected.value));
+const connectionHint = computed(() => portStatus.value.key === 'missingOutput' ? t('missingOutputHelp') : portStatus.value.key === 'missingInput' ? t('missingInputHelp') : t('ui.view_midi_input_and_output'));
 const mixerType = ref<MixerType>('l6');
 const appSettings = reactive({
   showAdvanced: false,
@@ -202,9 +206,9 @@ const hasGlobalActiveOrPausedLfos = computed(() => {
 });
 
 const globalLfoButtonText = computed(() => {
-  if (!hasGlobalActiveOrPausedLfos.value) return 'No LFOs';
-  if (hasGlobalActiveLfos.value) return 'Pause LFOs';
-  return 'Resume LFOs';
+  if (!hasGlobalActiveOrPausedLfos.value) return t('ui.no_lfos');
+  if (hasGlobalActiveLfos.value) return t('ui.pause_lfos');
+  return t('ui.resume_lfos');
 });
 
 function pauseResumeAllGlobalLfos() {
@@ -287,20 +291,20 @@ function handleAdvancedSettingsSave(data: { channelControls: ChannelControls[], 
   // Save to localStorage for persistence
   if (persistConfig(data.mixerType)) {
     console.log('✅ Advanced settings saved to localStorage');
-    alert('✅ Settings saved successfully!');
+    alert(t('ui.settings_saved_successfully'));
   } else {
-    alert('❌ Failed to save settings. Please check browser storage permissions.');
+    alert(t('ui.failed_to_save_settings_please_check_browser_storage_permissions'));
   }
 }
 
 // ── Adopt the mixer's shared settings (MIDI channel, pad notes, CC# map) ─────────────────
 // The mixer's values win: whenever a state snapshot is read (link open, Device Settings opened,
 // scene recall), anything that differs from this app's config is copied in and saved.
-const mixerNotice = ref<string | null>(null);
+const mixerNotice = ref<(() => string) | null>(null);
 let mixerNoticeTimer: ReturnType<typeof window.setTimeout> | undefined;
 const MIXER_NOTICE_MS = 4000;
 
-function showMixerNotice(text: string): void {
+function showMixerNotice(text: () => string): void {
   mixerNotice.value = text;
   window.clearTimeout(mixerNoticeTimer);
   mixerNoticeTimer = window.setTimeout(() => {
@@ -339,7 +343,7 @@ function adoptMixerState(): void {
   let channels: ChannelControls[] = JSON.parse(JSON.stringify(channelControls.value));
   let globals: GlobalControlsType = JSON.parse(JSON.stringify(globalControls.value));
   const pads: SoundPad[] = JSON.parse(JSON.stringify(soundPads.value));
-  const adopted: string[] = [];
+  const adopted: TranslationKey[] = [];
 
   // CC map: only from a verified table whose layout matches the config's mixer type.
   if (state.ccMap && state.ccMapVerified && state.layout !== null && state.layout === mixerType.value) {
@@ -347,7 +351,7 @@ function adoptMixerState(): void {
     if (result.changed) {
       channels = result.channelControls;
       globals = result.globalControls;
-      adopted.push('CC map');
+      adopted.push('ui.cc_map');
     }
   }
 
@@ -367,7 +371,7 @@ function adoptMixerState(): void {
         changed = true;
       }
     }
-    if (changed) adopted.push('MIDI channel');
+    if (changed) adopted.push('ui.midi_channel');
   }
 
   // Pad notes.
@@ -381,7 +385,7 @@ function adoptMixerState(): void {
     pad.note = note;
     padsChanged = true;
   });
-  if (padsChanged) adopted.push('pad notes');
+  if (padsChanged) adopted.push('ui.pad_notes');
 
   if (adopted.length === 0) return;
   channelControls.value = channels;
@@ -389,7 +393,7 @@ function adoptMixerState(): void {
   soundPads.value = pads;
   persistConfig();
   console.log(`Adopted from the mixer: ${adopted.join(', ')}`);
-  showMixerNotice(`Loaded settings from the mixer (${adopted.join(', ')})`);
+  showMixerNotice(() => t('adopted', { settings: adopted.map((key) => t(key)).join(', ') }));
 }
 
 watch(() => deviceSettings.mixerState.readAt, adoptMixerState);
@@ -465,19 +469,19 @@ onUnmounted(() => {
     <div class="consola-escala" :style="{ '--canales': channelControls.length }">
       <header class="barra">
         <div class="placa-nombre">
-          <b>ZOOM {{ mixerType === 'l6max' ? 'L6max' : 'L6' }}</b>
-          <span>MEZCLADOR · {{ channelControls.length }} CANALES</span>
+          <b>{{ t('fixed.ZOOM') }} {{ mixerType === 'l6max' ? 'L6max' : 'L6' }}</b>
+          <span>{{ t('ui.mixer') }} {{ channelControls.length }} {{ t('ui.channels') }}</span>
         </div>
 
         <button
           type="button"
           class="estado"
-          :title="midiConnected ? 'Ver la conexión MIDI' : 'El mezclador no está conectado'"
+          :title="connectionHint"
           :aria-expanded="showConexion"
           @click="showConexion = !showConexion"
         >
-          <i class="lampara verde" :class="{ on: midiConnected }"></i>
-          <span>{{ midiConnected ? 'CONECTADA' : 'SIN CONEXIÓN' }}</span>
+          <i class="lampara" :class="[portStatus.tone, { on: midiService.midiInputConnected.value || midiService.midiOutputConnected.value }]"></i>
+          <span>{{ t(portStatus.key) }}</span>
         </button>
 
         <SceneControls v-if="midiConnected" class="barra-escenas" :mixerType="mixerType" @sceneChanged="onSceneChanged" />
@@ -489,34 +493,34 @@ onUnmounted(() => {
             class="boton-barra"
             @click="pauseResumeAllGlobalLfos"
           >
-            {{ hasGlobalActiveLfos ? 'Pausar LFO' : 'Reanudar LFO' }}
+            {{ hasGlobalActiveLfos ? t('ui.pause_lfos_2') : t('ui.resume_lfos_2') }}
           </button>
           <button
             type="button"
             class="boton-barra"
             :class="{ activo: ui.modulacion }"
             :aria-pressed="ui.modulacion"
-            title="Mostrar los LFO de cada control"
+            :title="t('ui.show_lfos_oscillators_that_move_controls_automatically')"
             @click="ui.modulacion = !ui.modulacion"
           >
-            Modulación
+            {{ t('ui.modulation') }}
           </button>
           <button type="button" class="boton-barra" :class="{ activo: showAdvancedSettings }" @click="toggleAdvancedSettings">
-            Ajustes
+            {{ t('ui.settings') }}
           </button>
           <button type="button" class="boton-barra" :class="{ activo: showDebugDrawer }" @click="toggleDebugDrawer">
-            Debug
+            {{ t('ui.diagnostics') }}
           </button>
         </div>
       </header>
 
       <!-- Conexión MIDI: a la vista sin mezclador; con él, se abre desde la lámpara de estado -->
-      <div v-show="!midiConnected || showConexion" class="panel-conexion" :class="{ flotante: midiConnected }">
+      <div v-show="!portStatus.complete || showConexion" class="panel-conexion" :class="{ flotante: midiConnected }">
         <MidiConnection @connectionChanged="onMidiConnectionChanged" />
       </div>
 
       <main v-if="midiConnected" class="consola">
-        <section class="tiras" aria-label="Canales">
+        <section class="tiras" :aria-label="t('ui.channels_2')">
           <ChannelStrip
             v-for="channel in channelControls"
             :key="channel.channel"
@@ -541,15 +545,15 @@ onUnmounted(() => {
 
       <main v-else class="sin-conexion">
         <div class="aviso">
-          <h2>Conecta la Zoom L6 o L6max</h2>
+          <h2>{{ t('ui.connect_your_zoom_l6_or_l6max') }}</h2>
           <ol>
-            <li>Conecta el mezclador al Mac por USB y enciéndelo.</li>
-            <li>Pulsa «Auto-Connect Zoom», o elige en los dos menús el puerto «Mixer Control». Por ese puerto van niveles, EQ, paneos, mutes, sound pads y escenas.</li>
-            <li>El puerto «Editor» no hay que elegirlo: la app lo detecta sola y lo usa para los parámetros de efecto y los ajustes del aparato.</li>
+            <li>{{ t('ui.connect_the_mixer_to_your_mac_over_usb_and_turn_it_on') }}</li>
+            <li>{{ t('ui.press_connect_zoom_or_choose_mixer_control_for_both_input_and_output_this_port_carrie') }}</li>
+            <li>{{ t('ui.the_app_detects_the_editor_port_automatically_it_uses_it_for_effect_parameters_and_mi') }}</li>
           </ol>
           <p class="aviso-pie">
-            Basada en <a href="https://github.com/philmillman/zoom-l6-companion" target="_blank" rel="noopener noreferrer">Zoom L6 Companion</a>
-            de philmillman (MIT). No está afiliada a Zoom Corp.
+            {{ t('ui.based_on') }} <a href="https://github.com/philmillman/zoom-l6-companion" target="_blank" rel="noopener noreferrer">{{ t('fixed.Zoom_L6_Companion') }}</a>
+            {{ t('ui.by_philmillman_mit_not_affiliated_with_zoom_corp') }}
           </p>
         </div>
       </main>
@@ -561,23 +565,23 @@ onUnmounted(() => {
         <!-- Safari macOS prompt -->
         <div v-if="platformInfo.isSafariMac" class="platform-notice safari-mac">
           <div class="notice-header">
-            <h3>🔌 Jazz Plugin Required for Safari</h3>
-            <button @click="showPlatformPrompt = false" class="close-button">×</button>
+            <h3>{{ t('ui.jazz_plugin_required_for_safari') }}</h3>
+            <button @click="showPlatformPrompt = false" class="close-button" :aria-label="t('ui.close')">×</button>
           </div>
           <div class="notice-content">
-            <p>Safari requires the Jazz Plugin to access MIDI devices. Please install it to use this app:</p>
+            <p>{{ t('ui.safari_requires_the_jazz_plugin_to_access_midi_devices_please_install_it_to_use_this_') }}</p>
             <ol>
-              <li>Download the Jazz Plugin from <a href="https://jazz-soft.net/download/Jazz-Plugin/" target="_blank">jazz-soft.net</a></li>
-              <li>Run the installer and follow the setup instructions</li>
-              <li>Restart Safari after installation</li>
-              <li>Reload this page</li>
+              <li>{{ t('ui.download_the_jazz_plugin_from') }} <a href="https://jazz-soft.net/download/Jazz-Plugin/" target="_blank">{{ t('fixed.jazz_soft_net') }}</a></li>
+              <li>{{ t('ui.run_the_installer_and_follow_the_setup_instructions') }}</li>
+              <li>{{ t('ui.restart_safari_after_installation') }}</li>
+              <li>{{ t('ui.reload_this_page') }}</li>
             </ol>
             <div class="notice-actions">
               <a href="https://jazz-soft.net/download/Jazz-Plugin/" target="_blank" class="download-button">
-                Download Jazz Plugin
+                {{ t('ui.download_jazz_plugin') }}
               </a>
               <button @click="showPlatformPrompt = false" class="skip-button">
-                Skip for now
+                {{ t('ui.skip_for_now') }}
               </button>
             </div>
           </div>
@@ -586,25 +590,25 @@ onUnmounted(() => {
         <!-- iOS / iPadOS prompt (only shown when the browser lacks the Web MIDI API) -->
         <div v-if="platformInfo.isIOSDevice" class="platform-notice ios">
           <div class="notice-header">
-            <h3>📱 Use MIDIWeb Browser on iPhone &amp; iPad</h3>
-            <button @click="showPlatformPrompt = false" class="close-button">×</button>
+            <h3>{{ t('ui.use_midiweb_browser_on_iphone_ipad') }}</h3>
+            <button @click="showPlatformPrompt = false" class="close-button" :aria-label="t('ui.close')">×</button>
           </div>
           <div class="notice-content">
-            <p>Safari on iPhone and iPad doesn't support the Web MIDI API, so it can't control your Zoom L6.</p>
+            <p>{{ t('ui.safari_on_iphone_and_ipad_doesn_t_support_the_web_midi_api_so_it_can_t_control_your_z') }}</p>
             <div class="ios-info">
-              <p>Install the free <strong>MIDIWeb Browser</strong> app, which adds Web MIDI on Apple devices:</p>
+              <p>{{ t('ui.install_the_free') }} <strong>{{ t('fixed.MIDIWeb_Browser') }}</strong> {{ t('ui.app_which_adds_web_midi_on_apple_devices') }}</p>
               <ol>
-                <li>Get MIDIWeb Browser from the App Store</li>
-                <li>Open it and find <strong>Zoom L6 Companion</strong> in its MIDIWeb Hub directory, or go to <strong>{{ appHost }}</strong></li>
-                <li>Connect your Zoom L6 over USB and allow MIDI access when asked</li>
+                <li>{{ t('ui.get_midiweb_browser_from_the_app_store') }}</li>
+                <li>{{ t('ui.open_it_and_find') }} <strong>{{ t('fixed.Zoom_L6_Companion') }}</strong> {{ t('ui.in_its_midiweb_hub_directory_or_go_to') }} <strong>{{ appHost }}</strong></li>
+                <li>{{ t('ui.connect_your_zoom_l6_over_usb_and_allow_midi_access_when_asked') }}</li>
               </ol>
             </div>
             <div class="notice-actions">
               <a href="https://apps.apple.com/us/app/midiweb-browser/id6757226617" target="_blank" rel="noopener" class="download-button">
-                Get MIDIWeb Browser
+                {{ t('ui.get_midiweb_browser') }}
               </a>
               <button @click="showPlatformPrompt = false" class="continue-button">
-                Continue anyway
+                {{ t('ui.continue_anyway') }}
               </button>
             </div>
           </div>
@@ -623,7 +627,7 @@ onUnmounted(() => {
     <!-- Brief notice when settings were adopted from the mixer -->
     <Transition name="mixer-notice">
       <div v-if="mixerNotice" class="mixer-notice" role="status" aria-live="polite">
-        {{ mixerNotice }}
+        {{ mixerNotice() }}
       </div>
     </Transition>
 

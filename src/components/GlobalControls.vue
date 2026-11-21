@@ -2,12 +2,12 @@
   <!-- Columna lateral: efecto interno y compresor. Las escenas viven en la barra superior. -->
   <div class="global-controls">
     <div class="grupo">
-      <h2 class="t-rotulo">Efecto</h2>
+      <h2 class="t-rotulo">{{ t('ui.effect') }}</h2>
       <MidiControl
         :control="globalData.efxType"
         v-model="values.efxType"
         @change="onControlChange('global', 'efxType', $event)"
-        rotulo="Tipo de efecto"
+        :rotulo="t('ui.effect_type')"
       />
       <EffectParams
         :efxType="values.efxType"
@@ -17,19 +17,20 @@
     </div>
 
     <div class="grupo">
-      <h2 class="t-rotulo">Compresor</h2>
+      <h2 class="t-rotulo">{{ t('ui.compressor') }}</h2>
       <MidiControl
         :control="globalData.compressor"
         v-model="values.compressor"
         @change="onControlChange('global', 'compressor', $event)"
         forma="ancha"
-        rotulo="COMP"
+        :rotulo="t('fixed.COMP')"
       />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
+import { t } from '../i18n';
 import { reactive } from 'vue';
 import MidiControl from './MidiControl.vue';
 import EffectParams from './EffectParams.vue';
