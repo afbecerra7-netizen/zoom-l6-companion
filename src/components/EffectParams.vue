@@ -109,28 +109,5 @@ watch(
 </script>
 
 <style scoped>
-.effect-params {
-  display: flex;
-  align-items: flex-start;
-  justify-content: center;
-  gap: 12px;
-  flex-wrap: wrap;
-  width: 100%;
-  margin-top: 12px;
-  padding-top: 12px;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.effect-params.compact {
-  gap: 6px;
-  margin-top: 6px;
-  padding-top: 6px;
-}
-
-@media (max-width: 480px) {
-  .effect-params {
-    flex-direction: column;
-    align-items: center;
-  }
-}
+.effect-params { display: flex; flex-wrap: wrap; justify-content: space-around; gap: 6px; min-height: 66px; align-items: center; }
 </style>

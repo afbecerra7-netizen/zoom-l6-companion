@@ -1,9 +1,8 @@
 <template>
-  <div class="param-knob" :class="{ compact, disabled: !isInteractive }">
-    <label v-if="!compact" class="param-knob-label">{{ def.label }}</label>
+  <div class="param-knob" :class="{ disabled: !isInteractive }">
     <div
       ref="knobEl"
-      class="knob"
+      class="perilla-zona"
       :class="{ active: isDragging }"
       tabindex="0"
       role="slider"
@@ -12,7 +11,6 @@
       :aria-valuemax="def.range.max"
       :aria-valuenow="displayNumber ?? undefined"
       :aria-disabled="!isInteractive"
-      :style="{ transform: `rotate(${knobRotation}deg)` }"
       @pointerdown="startDrag"
       @pointermove="onPointerMove"
       @pointerup="stopDrag"
@@ -21,7 +19,8 @@
       @wheel.prevent="onWheel"
       @keydown="onKeydown"
     >
-      <div class="knob-indicator"></div>
+      <div class="perilla-falda"></div>
+      <div class="perilla-tapa" :style="{ transform: `rotate(${knobRotation}deg)` }"><i class="perilla-indice"></i></div>
       <span
         v-if="statusDotVisible"
         class="status-dot"
@@ -29,10 +28,8 @@
         :title="statusTitle"
       ></span>
     </div>
-    <div class="param-knob-footer">
-      <span v-if="compact" class="param-knob-inline-label">{{ def.label }}</span>
-      <span v-else class="param-knob-value">{{ displayText }}</span>
-    </div>
+    <span class="perilla-nombre">{{ def.label }}</span>
+    <span class="perilla-valor">{{ displayText }}</span>
   </div>
 </template>
 
@@ -211,141 +208,18 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-.param-knob {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 8px;
-  border-radius: 8px;
-  min-width: 60px;
-}
-
-.param-knob.compact {
-  padding: 4px;
-  min-width: 40px;
-}
-
-.param-knob.disabled {
-  opacity: 0.5;
-  pointer-events: none;
-}
-
-.param-knob-label {
-  font-size: 10px;
-  color: #ccc;
-  margin-bottom: 8px;
-  text-align: center;
-  font-weight: 500;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.knob {
-  width: 50px;
-  height: 50px;
-  border-radius: 50%;
-  background: linear-gradient(145deg, #3a3a3a, #1a1a1a);
-  border: 2px solid #4a4a4a;
-  cursor: pointer;
-  position: relative;
-  transition: transform 0.1s ease;
-  touch-action: none;
-}
-
-.knob:hover {
-  border-color: #4a90e2;
-}
-
-.knob:focus-visible {
-  outline: 2px solid #4a90e2;
-  outline-offset: 2px;
-}
-
-.knob.active {
-  border-color: #4a90e2;
-  box-shadow: 0 0 10px rgba(74, 144, 226, 0.5);
-}
-
-.param-knob.compact .knob {
-  width: 40px;
-  height: 40px;
-}
-
-.knob-indicator {
-  position: absolute;
-  top: 5px;
-  left: 50%;
-  width: 2px;
-  height: 15px;
-  background: #4a90e2;
-  transform: translateX(-50%);
-  border-radius: 1px;
-}
-
-.status-dot {
-  position: absolute;
-  right: -2px;
-  bottom: -2px;
-  width: 9px;
-  height: 9px;
-  border-radius: 50%;
-  border: 1px solid #1a1a1a;
-  background: #888;
-}
-
-.status-dot.reading {
-  background: #999;
-  animation: param-knob-pulse 1.1s ease-in-out infinite;
-}
-
-.status-dot.writing {
-  background: #4a90e2;
-  box-shadow: 0 0 4px rgba(74, 144, 226, 0.8);
-}
-
-.status-dot.error {
-  background: #f44336;
-  box-shadow: 0 0 4px rgba(244, 67, 54, 0.8);
-}
-
-@keyframes param-knob-pulse {
-  0%, 100% { opacity: 0.4; }
-  50% { opacity: 1; }
-}
-
-.param-knob-footer {
-  margin-top: 8px;
-  min-height: 12px;
-  text-align: center;
-}
-
-.param-knob-value {
-  font-size: 10px;
-  color: #4a90e2;
-  font-weight: bold;
-}
-
-.param-knob-inline-label {
-  font-size: 9px;
-  color: #4a90e2;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-@media (max-width: 768px) {
-  .param-knob {
-    min-width: 44px;
-  }
-
-  .knob {
-    width: 44px;
-    height: 44px;
-  }
-
-  .param-knob.compact .knob {
-    width: 40px;
-    height: 40px;
-  }
-}
+.param-knob { display: flex; flex-direction: column; align-items: center; gap: 2px; touch-action: none; }
+.param-knob.disabled { opacity: 0.4; }
+.perilla-zona { position: relative; width: 40px; height: 40px; border-radius: 50%; cursor: ns-resize; outline: none; }
+.param-knob.disabled .perilla-zona { cursor: default; }
+.perilla-zona:focus-visible .perilla-falda { box-shadow: var(--relieve-4), 0 0 0 2px rgba(142, 240, 220, 0.6); }
+.perilla-falda { position: absolute; inset: 5px; border-radius: 50%; background: linear-gradient(135deg, rgba(255, 244, 226, 0.10), transparent 45%, rgba(0, 0, 0, 0.32)), repeating-conic-gradient(#2c2927 0 6deg, #3a3633 6deg 12deg); box-shadow: var(--relieve-4); }
+.perilla-falda::before { content: ""; position: absolute; inset: 15%; border-radius: 50%; background: radial-gradient(circle, transparent 0 58%, rgba(0, 0, 0, 0.18) 100%), conic-gradient(from 20deg, #dcd8d1, #a7a298 12%, #ece8e1 25%, #9d978d 38%, #d8d3cb 50%, #a29d93 62%, #ebe7e0 75%, #9f9a90 88%, #dcd8d1); box-shadow: inset 1px 1px 1px rgba(255, 255, 255, 0.6), inset -1px -2px 2px rgba(0, 0, 0, 0.4); }
+.perilla-tapa { position: absolute; inset: 15%; border-radius: 50%; z-index: 1; }
+.perilla-indice { position: absolute; left: 50%; top: 4%; width: 2.5px; height: 38%; margin-left: -1.25px; border-radius: 2px; background: #1f1d1b; }
+.perilla-nombre { font: 700 11.5px/1 var(--f-panel); letter-spacing: 0.1em; text-transform: uppercase; color: var(--serigrafia); white-space: nowrap; }
+.perilla-valor { font: 500 10.5px/1 var(--f-datos); color: var(--serigrafia-2); font-variant-numeric: tabular-nums; white-space: nowrap; }
+/* leyendo o escribiendo en el mezclador: dato en curso; error: rojo, que es peligro */
+.status-dot { position: absolute; right: -3px; top: -3px; z-index: 2; width: 8px; height: 8px; border-radius: 50%; background: var(--vfd); }
+.status-dot.error { background: var(--rojo); }
 </style>

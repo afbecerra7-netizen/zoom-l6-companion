@@ -1,5 +1,22 @@
 # Zoom L6 Companion App
 
+> **Este es un fork** de [philmillman/zoom-l6-companion](https://github.com/philmillman/zoom-l6-companion) (MIT).
+> Añade dos cosas sobre el original:
+>
+> - **App de Mac** (Electron): `npm run app` para abrirla, `npm run package:mac` para generar `release/Zoom L6.app`.
+> - **Una consola nueva**, con el lenguaje visual de TAPE 101: los canales lado a lado, faders para el
+>   nivel, una cinta gaffer con rotulador por canal para escribir qué va en cada uno, y los LFO a la
+>   vista solo en modo MODULACIÓN. Ocupa la ventana entera y no tiene scroll: si la ventana es menor
+>   que 1400 × 720, se encoge completa. La maqueta que se aprobó está en [`maqueta/`](maqueta/).
+>
+> La consola **no muestra dB**: la curva de cada control de la Zoom no está medida, así que enseña
+> escalas neutras (0 a 10, −10 a +10). El rango de FREQ, 100 Hz – 8 kHz, sí sale del manual. Los
+> paneles de Ajustes y Debug conservan el aspecto original.
+>
+> Prueba de punta a punta contra un mezclador simulado (puertos MIDI virtuales; pide un Python con
+> `mido` y `python-rtmidi`): `PYTHON=/ruta/a/python sh scripts/e2e/correr.sh`. No sustituye a probar
+> con el aparato. Lo que sigue es el README del original.
+
 **This project is not affiliated with Zoom Corp.**
 
 > This is under active development, contributions are welcome!

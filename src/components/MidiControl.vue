@@ -1,100 +1,121 @@
 <template>
-  <div class="midi-control" :class="[`control-${control.type}`, { active: isActive, compact }]">
-    <label class="control-label">{{ control.name }}</label>
-    
+  <div class="midi-control" :class="[`control-${clase}`, { active: isActive }]">
     <!-- Fader -->
-    <div v-if="control.type === 'fader'" class="fader-container" @dblclick.prevent="resetToDefault">
-      <input
-        type="range"
-        :min="control.min"
-        :max="control.max"
-        :value="currentValue"
-        @input="handleInput"
-        class="fader"
-        orient="vertical"
-      />
-      <div class="value-display">{{ displayValue }}</div>
-    </div>
-    
-    <!-- Knob -->
-    <div v-else-if="control.type === 'knob'" class="knob-container">
-      <div
-        class="knob"
-        @mousedown="startDrag"
-        @touchstart="startDrag"
-        @dblclick.prevent="resetToDefault"
-        :style="{ transform: `rotate(${knobRotation}deg)` }"
-      >
-        <div class="knob-indicator"></div>
-      </div>
-      <div class="value-display">
-        <span v-if="compact" class="knob-label">{{ control.name }}</span>
-        <span v-else>{{ displayValue }}</span>
-      </div>
-    </div>
-    
-    <!-- LFO toggle button (bottom-right of container) -->
-    <button v-if="control.type === 'knob' && !compact" class="lfo-btn" :class="{ active: lfo.state === 'active', paused: lfo.state === 'paused' }" @click.stop="openPopover" :title="lfo.state === 'disabled' ? 'Open LFO' : `LFO ${lfo.state}`" @dblclick.stop.prevent="resetToDefault">
-      <span class="lfo-dot" :style="lfoDotStyle"></span>
-    </button>
-    
-    <!-- Centered Dialog Popover -->
-    <div v-if="showPopover" class="lfo-overlay" @click="closePopover">
-      <div class="lfo-dialog" @click.stop>
-        <div class="lfo-dialog-header">
-          <div class="lfo-dialog-title">LFO: {{ control.name }}</div>
-          <button class="lfo-close" @click="closePopover">×</button>
+    <template v-if="clase === 'fader'">
+      <div class="fader">
+        <div class="fader-escala" aria-hidden="true">
+          <span v-for="marca in MARCAS_FADER" :key="marca" :style="{ top: alturaFader((marca / 10) * 127) }">{{ marca }}</span>
         </div>
-        <LFOControl :config="lfo" @update:config="updateLfoConfig" />
-      </div>
-    </div>
-    
-    <!-- Toggle Button -->
-    <div v-else-if="control.type === 'toggle'" class="toggle-container">
-      <button
-        class="toggle-button"
-        :class="{ active: currentValue > 63 }"
-        @click="toggleValue"
-      >
-        <span v-if="compact" class="toggle-label">{{ control.name }}</span>
-        <span class="toggle-state">{{ currentValue > 63 ? 'ON' : 'OFF' }}</span>
-      </button>
-    </div>
-    
-    <!-- Regular Button -->
-    <div v-else-if="control.type === 'button'" class="button-container">
-      <button
-        class="control-button"
-        @mousedown="buttonDown"
-        @mouseup="buttonUp"
-        @touchstart="buttonDown"
-        @touchend="buttonUp"
-      >
-        {{ control.name }}
-      </button>
-    </div>
-    
-    <!-- Radio Group -->
-    <div v-else-if="control.type === 'radio'" class="radio-container">
-      <div class="radio-group">
-        <label 
-          v-for="option in control.options" 
-          :key="option.value"
-          class="radio-option"
-          :class="{ active: currentValue === option.value }"
+        <div
+          class="fader-pista"
+          tabindex="0"
+          role="slider"
+          :aria-label="etiqueta"
+          :aria-valuemin="control.min"
+          :aria-valuemax="control.max"
+          :aria-valuenow="Math.round(currentValue)"
+          :aria-valuetext="displayValue"
+          @pointerdown="startDrag"
+          @dblclick.prevent="resetToDefault"
+          @keydown="onKeydown"
         >
-          <input
-            type="radio"
-            :name="`${control.name}-${control.cc}`"
-            :value="option.value"
-            :checked="currentValue === option.value"
-            @change="handleRadioChange(option.value)"
-            class="radio-input"
-          />
-          <span class="radio-label">{{ option.label }}</span>
-        </label>
+          <div class="fader-tapa" :style="{ top: alturaFader(currentValue) }"></div>
+        </div>
+        <button
+          v-if="lfoVisible"
+          type="button"
+          class="lfo-btn"
+          :class="{ active: lfo.state === 'active', paused: lfo.state === 'paused' }"
+          :title="`LFO de ${etiqueta}`"
+          @click.stop="openPopover"
+        ></button>
       </div>
+      <div class="fader-valor">{{ displayValue }}</div>
+    </template>
+
+    <!-- Perilla: la luz no gira, solo el índice -->
+    <div v-else-if="clase === 'knob'" class="perilla" :class="{ bipolar }">
+      <div
+        class="perilla-zona"
+        tabindex="0"
+        role="slider"
+        :aria-label="etiqueta"
+        :aria-valuemin="control.min"
+        :aria-valuemax="control.max"
+        :aria-valuenow="Math.round(currentValue)"
+        :aria-valuetext="displayValue"
+        @pointerdown="startDrag"
+        @dblclick.prevent="resetToDefault"
+        @keydown="onKeydown"
+      >
+        <div class="perilla-falda"></div>
+        <div class="perilla-tapa" :style="{ transform: `rotate(${knobRotation}deg)` }"><i class="perilla-indice"></i></div>
+        <button
+          v-if="lfoVisible"
+          type="button"
+          class="lfo-btn"
+          :class="{ active: lfo.state === 'active', paused: lfo.state === 'paused' }"
+          :title="`LFO de ${etiqueta}`"
+          @pointerdown.stop
+          @click.stop="openPopover"
+        ></button>
+      </div>
+      <span class="perilla-nombre">{{ etiqueta }}</span>
+      <span class="perilla-valor">{{ displayValue }}</span>
     </div>
+
+    <!-- Interruptor: tecla con lámpara -->
+    <button
+      v-else-if="clase === 'toggle'"
+      type="button"
+      class="tecla"
+      :class="[forma ? `tecla-${forma}` : '', { on: currentValue > 63 }]"
+      :aria-pressed="currentValue > 63"
+      @click="toggleValue"
+    >
+      <i class="lampara" :class="tono"></i>{{ etiqueta }}
+    </button>
+
+    <!-- Tecla momentánea -->
+    <button
+      v-else-if="clase === 'button'"
+      type="button"
+      class="tecla"
+      @pointerdown="buttonDown"
+      @pointerup="buttonUp"
+      @pointercancel="buttonUp"
+    >
+      {{ etiqueta }}
+    </button>
+
+    <!-- Selector: una sola tecla encendida -->
+    <div v-else-if="clase === 'radio'" class="selector" role="radiogroup" :aria-label="etiqueta">
+      <button
+        v-for="option in control.options"
+        :key="option.value"
+        type="button"
+        class="tecla"
+        :class="{ on: opcionActiva === option.value }"
+        role="radio"
+        :aria-checked="opcionActiva === option.value"
+        @click="handleRadioChange(option.value)"
+      >
+        <i class="lampara blanco"></i>{{ option.label }}
+      </button>
+    </div>
+
+    <!-- Diálogo del LFO: fuera de la consola, para que no se encoja con ella -->
+    <Teleport to="body">
+      <div v-if="showPopover" class="lfo-overlay" @click="closePopover">
+        <div class="lfo-dialog" @click.stop>
+          <div class="lfo-dialog-header">
+            <div class="lfo-dialog-title">LFO: {{ etiqueta }}</div>
+            <button class="lfo-close" @click="closePopover">×</button>
+          </div>
+          <LFOControl :config="lfo" @update:config="updateLfoConfig" />
+        </div>
+      </div>
+    </Teleport>
   </div>
 </template>
 
@@ -102,12 +123,25 @@
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import type { MIDIControl } from '../config/midiConfig';
 import { midiService } from '../services/midiService';
-import LFOControl, { type LFOConfig, type LFOShape, type LFOMode, type LFOState } from './LFOControl.vue';
+import LFOControl, { type LFOConfig, type LFOShape, type LFOMode } from './LFOControl.vue';
+import { ui, escalaConsola } from '../stores/ui';
+import { esBipolar, formatea, type Unidad } from '../utils/unidades';
 
 interface Props {
   control: MIDIControl;
   modelValue?: number;
+  /** Se conserva por compatibilidad; la consola tiene una sola vista. */
   compact?: boolean;
+  /** Dibuja el control de otra forma que la de su configuración: el nivel es un fader. */
+  vista?: 'fader';
+  /** Cómo se lee el valor. Sin unidad se muestra el número MIDI. */
+  unidad?: Unidad;
+  /** Rótulo serigrafiado; por defecto, el nombre de la configuración. */
+  rotulo?: string;
+  /** Forma de la tecla de un interruptor. */
+  forma?: 'mini' | 'mute' | 'ancha';
+  /** Color de la lámpara de un interruptor: ámbar = fuera de lo normal, blanco = neutro. */
+  tono?: 'ambar' | 'blanco';
 }
 
 interface Emits {
@@ -117,7 +151,12 @@ interface Emits {
 
 const props = withDefaults(defineProps<Props>(), {
   modelValue: undefined,
-  compact: false
+  compact: false,
+  vista: undefined,
+  unidad: undefined,
+  rotulo: undefined,
+  forma: undefined,
+  tono: 'blanco',
 });
 
 const emit = defineEmits<Emits>();
@@ -129,12 +168,39 @@ const dragStartY = ref(0);
 const dragStartValue = ref(0);
 
 // Computed properties
+const clase = computed(() => props.vista ?? props.control.type);
+const etiqueta = computed(() => props.rotulo ?? props.control.name);
+const bipolar = computed(() => esBipolar(props.unidad));
+
 const displayValue = computed(() => {
   if (props.control.type === 'toggle') {
     return currentValue.value > 63 ? 'ON' : 'OFF';
   }
-  return Math.round(currentValue.value);
+  return props.unidad ? formatea(props.unidad, currentValue.value) : String(Math.round(currentValue.value));
 });
+
+/** Escala neutra del fader, de 0 a 10. */
+const MARCAS_FADER = [10, 8, 6, 4, 2, 0];
+function alturaFader(valor: number): string {
+  const rango = props.control.max - props.control.min || 1;
+  return `calc(10px + ${1 - (valor - props.control.min) / rango} * (100% - 20px))`;
+}
+
+// El mezclador puede mandar cualquier CC dentro del tramo de una opción, no solo su valor
+// exacto: la opción encendida es la de mayor valor que no pasa del actual.
+const opcionActiva = computed<number | null>(() => {
+  const opciones = props.control.options ?? [];
+  if (opciones.length === 0) return null;
+  const candidatas = opciones.filter((o) => o.value <= currentValue.value);
+  const elegida = candidatas.length > 0
+    ? candidatas.reduce((mejor, o) => (o.value > mejor.value ? o : mejor))
+    : opciones.reduce((menor, o) => (o.value < menor.value ? o : menor));
+  return elegida.value;
+});
+
+// Los LFO solo se ofrecen en modo MODULACIÓN, pero uno en marcha o en pausa se ve siempre:
+// si algo se mueve solo, tiene que verse por qué.
+const lfoVisible = computed(() => ui.modulacion || lfo.value.state !== 'disabled');
 
 const knobRotation = computed(() => {
   const range = props.control.max - props.control.min;
@@ -157,20 +223,6 @@ function closePopover() { showPopover.value = false; }
 function updateLfoConfig(cfg: LFOConfig) {
   lfo.value = cfg;
 }
-
-const lfoDotStyle = computed(() => {
-  const isActive = lfo.value.state === 'active';
-  const isPaused = lfo.value.state === 'paused';
-  
-  let backgroundColor = '#666'; // grey for disabled
-  if (isActive) backgroundColor = '#4a90e2'; // blue for active
-  if (isPaused) backgroundColor = '#f5a623'; // yellow/orange for paused
-  
-  return {
-    backgroundColor,
-    transform: `scale(${isActive ? 1 + 0.2 * Math.abs(lfoPhaseVal.value) : 1})`,
-  };
-});
 
 function lfoShapeSample(shape: LFOShape, p: number): number {
   switch (shape) {
@@ -283,40 +335,47 @@ function handleRadioChange(value: number) {
   updateValue(value);
 }
 
-function startDrag(event: MouseEvent | TouchEvent) {
+// Arrastre relativo: el control no salta al tocarlo. Shift = ajuste fino. Solo se manda un
+// valor cuando cambia el entero: arrastrar no repite el mismo CC en cada píxel.
+let dragEl: HTMLElement | null = null;
+
+function startDrag(event: PointerEvent) {
+  if (event.button !== 0) return;
   isDragging.value = true;
-  const clientYRaw = 'touches' in event ? event.touches?.[0]?.clientY : event.clientY;
-  const clientY = clientYRaw ?? 0;
-  dragStartY.value = clientY;
+  dragStartY.value = event.clientY;
   dragStartValue.value = currentValue.value;
-  
-  document.addEventListener('mousemove', handleDrag);
-  document.addEventListener('mouseup', stopDrag);
-  document.addEventListener('touchmove', handleDrag);
-  document.addEventListener('touchend', stopDrag);
-  
-  event.preventDefault();
+  dragEl = event.currentTarget as HTMLElement;
+  dragEl.setPointerCapture(event.pointerId);
+  dragEl.addEventListener('pointermove', handleDrag);
+  dragEl.addEventListener('pointerup', stopDrag);
+  dragEl.addEventListener('pointercancel', stopDrag);
 }
 
-function handleDrag(event: MouseEvent | TouchEvent) {
+function handleDrag(event: PointerEvent) {
   if (!isDragging.value) return;
-  
-  const clientYRaw = 'touches' in event ? event.touches?.[0]?.clientY : event.clientY;
-  const clientY = clientYRaw ?? dragStartY.value;
-  const deltaY = dragStartY.value - clientY; // Inverted for natural feel
-  const sensitivity = 0.5;
-  const deltaValue = deltaY * sensitivity;
-  const newValue = dragStartValue.value + deltaValue;
-  
-  updateValue(newValue);
+  const recorrido = clase.value === 'fader' ? Math.max(1, (dragEl?.clientHeight ?? 200) - 20) : 160;
+  const rango = props.control.max - props.control.min;
+  const deltaY = (dragStartY.value - event.clientY) / escalaConsola(); // hacia arriba sube
+  const nuevo = Math.round(dragStartValue.value + (deltaY / recorrido) * rango * (event.shiftKey ? 0.2 : 1));
+  const limitado = Math.max(props.control.min, Math.min(props.control.max, nuevo));
+  if (limitado !== currentValue.value) updateValue(limitado);
 }
 
 function stopDrag() {
   isDragging.value = false;
-  document.removeEventListener('mousemove', handleDrag);
-  document.removeEventListener('mouseup', stopDrag);
-  document.removeEventListener('touchmove', handleDrag);
-  document.removeEventListener('touchend', stopDrag);
+  if (!dragEl) return;
+  dragEl.removeEventListener('pointermove', handleDrag);
+  dragEl.removeEventListener('pointerup', stopDrag);
+  dragEl.removeEventListener('pointercancel', stopDrag);
+  dragEl = null;
+}
+
+function onKeydown(event: KeyboardEvent) {
+  const pasos: Record<string, number> = { ArrowUp: 1, ArrowRight: 1, ArrowDown: -1, ArrowLeft: -1, PageUp: 10, PageDown: -10 };
+  const paso = pasos[event.key];
+  if (paso === undefined) return;
+  event.preventDefault();
+  updateValue(Math.round(currentValue.value) + paso);
 }
 
 // Reset to default (double-click / double-tap)
@@ -413,472 +472,51 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-.midi-control {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 8px;
-  border-radius: 8px;
-  background: #2a2a2a;
-  transition: all 0.2s ease;
-  min-width: 60px;
-  position: relative;
-}
+.midi-control { display: flex; flex-direction: column; align-items: center; min-width: 0; }
+.midi-control.control-fader { flex: 1; min-height: 0; align-self: stretch; gap: 7px; }
+.midi-control.control-toggle, .midi-control.control-radio { align-items: stretch; }
 
-.midi-control.compact {
-  padding: 4px;
-  min-width: 40px;
-}
+/* perilla */
+.perilla { position: relative; display: flex; flex-direction: column; align-items: center; gap: 2px; touch-action: none; }
+.perilla-zona { position: relative; width: 40px; height: 40px; border-radius: 50%; cursor: ns-resize; outline: none; }
+.perilla-zona:focus-visible .perilla-falda, .fader-pista:focus-visible .fader-tapa { box-shadow: var(--relieve-4), 0 0 0 2px rgba(142, 240, 220, 0.6); }
+.perilla.bipolar .perilla-zona::before { content: ""; position: absolute; left: 50%; top: -1px; width: 2px; height: 4px; margin-left: -1px; border-radius: 1px; background: var(--serigrafia-2); }
+.perilla-falda { position: absolute; inset: 5px; border-radius: 50%; background: linear-gradient(135deg, rgba(255, 244, 226, 0.10), transparent 45%, rgba(0, 0, 0, 0.32)), repeating-conic-gradient(#2c2927 0 6deg, #3a3633 6deg 12deg); box-shadow: var(--relieve-4); }
+.perilla-falda::before { content: ""; position: absolute; inset: 15%; border-radius: 50%; background: radial-gradient(circle, transparent 0 58%, rgba(0, 0, 0, 0.18) 100%), conic-gradient(from 20deg, #dcd8d1, #a7a298 12%, #ece8e1 25%, #9d978d 38%, #d8d3cb 50%, #a29d93 62%, #ebe7e0 75%, #9f9a90 88%, #dcd8d1); box-shadow: inset 1px 1px 1px rgba(255, 255, 255, 0.6), inset -1px -2px 2px rgba(0, 0, 0, 0.4); }
+.perilla-tapa { position: absolute; inset: 15%; border-radius: 50%; z-index: 1; }
+.perilla-indice { position: absolute; left: 50%; top: 4%; width: 2.5px; height: 38%; margin-left: -1.25px; border-radius: 2px; background: #1f1d1b; }
+.perilla-nombre { font: 700 11.5px/1 var(--f-panel); letter-spacing: 0.1em; text-transform: uppercase; color: var(--serigrafia); white-space: nowrap; }
+.perilla-valor { font: 500 10.5px/1 var(--f-datos); color: var(--serigrafia-2); font-variant-numeric: tabular-nums; white-space: nowrap; }
 
-.midi-control.active {
-  background: #3a3a3a;
-  box-shadow: 0 0 10px rgba(74, 144, 226, 0.5);
-}
+/* LFO: anillo en la esquina; lleno si está en marcha, ámbar si está en pausa */
+.lfo-btn { position: absolute; right: -3px; top: -3px; z-index: 2; width: 11px; height: 11px; padding: 0; border-radius: 50%; border: 1.5px solid var(--vfd); background: var(--hundido); cursor: pointer; }
+.lfo-btn.active { background: var(--vfd); box-shadow: 0 0 6px var(--vfd); }
+.lfo-btn.paused { border-color: var(--ambar); background: var(--ambar); }
 
-.control-label {
-  font-size: 10px;
-  color: #ccc;
-  margin-bottom: 8px;
-  text-align: center;
-  font-weight: 500;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
+/* fader */
+.fader { position: relative; flex: 1; min-height: 100px; align-self: stretch; display: grid; grid-template-columns: 34px 1fr; touch-action: none; }
+.fader-escala { position: relative; font: 500 10.5px/1 var(--f-datos); color: var(--serigrafia-3); }
+.fader-escala span { position: absolute; right: 8px; transform: translateY(-50%); }
+.fader-pista { position: relative; cursor: ns-resize; outline: none; }
+.fader-pista::before { content: ""; position: absolute; left: 50%; top: 0; bottom: 0; width: 8px; margin-left: -4px; border-radius: 4px; background: var(--hundido); box-shadow: var(--hueco); }
+.fader-tapa { position: absolute; left: 50%; width: 38px; height: 20px; margin: -10px 0 0 -19px; border-radius: 3px; background: linear-gradient(180deg, #e6e2db, #a8a39a 45%, #1f1d1b 45% 55%, #c9c4bb 55%, #8f897f); box-shadow: var(--relieve-4); }
+.fader .lfo-btn { right: 2px; top: 0; }
+.fader-valor { padding: 4px 7px; border-radius: 4px; background: var(--hundido); box-shadow: var(--hueco); font: 500 11.5px/1 var(--f-datos); color: var(--serigrafia); font-variant-numeric: tabular-nums; }
 
-.midi-control.compact .control-label {
-  display: none;
-}
+/* teclas de interruptor */
+.tecla-mini { height: 22px; min-width: 0; padding: 0 6px; font-size: 10.5px; letter-spacing: 0.08em; text-transform: none; color: var(--serigrafia-2); }
+.tecla-mini.on { color: var(--serigrafia); }
+.tecla-mute { flex-direction: column; height: 40px; width: 46px; gap: 5px; font-size: 11.5px; }
+.tecla-ancha { width: 100%; justify-content: flex-start; }
 
-.knob-label {
-  font-size: 9px;
-  color: #4a90e2;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  text-align: center;
-}
+/* selector */
+.selector { display: grid; grid-template-columns: 1fr 1fr; gap: 7px 6px; }
+.selector .tecla { justify-content: flex-start; padding: 0 7px; font-size: 11.5px; }
 
-/* Fader Styles */
-.fader-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  height: 150px;
-}
-
-.fader {
-  writing-mode: bt-lr; /* IE */
-  -webkit-appearance: slider-vertical; /* WebKit */
-  appearance: slider-vertical; /* Standard */
-  width: 20px;
-  height: 120px;
-  background: #1a1a1a;
-  border-radius: 10px;
-  outline: none;
-}
-
-.fader::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  width: 24px;
-  height: 20px;
-  background: #4a90e2;
-  border-radius: 4px;
-  cursor: pointer;
-}
-
-.fader::-moz-range-thumb {
-  width: 24px;
-  height: 20px;
-  background: #4a90e2;
-  border-radius: 4px;
-  cursor: pointer;
-  border: none;
-}
-
-/* Knob Styles */
-.knob-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
-.knob {
-  width: 50px;
-  height: 50px;
-  border-radius: 50%;
-  background: linear-gradient(145deg, #3a3a3a, #1a1a1a);
-  border: 2px solid #4a4a4a;
-  cursor: pointer;
-  position: relative;
-  transition: transform 0.1s ease;
-}
-
-.knob:hover {
-  border-color: #4a90e2;
-}
-
-.knob-indicator {
-  position: absolute;
-  top: 5px;
-  left: 50%;
-  width: 2px;
-  height: 15px;
-  background: #4a90e2;
-  transform: translateX(-50%);
-  border-radius: 1px;
-}
-
-/* LFO button */
-.lfo-btn {
-  position: absolute;
-  right: 4px;
-  bottom: 4px;
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  background: #222;
-  border: 1px solid #555;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-}
-.lfo-btn.active { border-color: #4a90e2; box-shadow: 0 0 6px rgba(74,144,226,0.6); }
-.lfo-btn.paused { border-color: #f5a623; box-shadow: 0 0 6px rgba(245,166,35,0.6); }
-.lfo-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: #666; /* Default grey, overridden by inline style */
-  transition: transform 0.05s linear;
-}
-
-/* Centered dialog popover */
-.lfo-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-}
-.lfo-dialog {
-  background: #1f1f1f;
-  border: 1px solid #444;
-  border-radius: 10px;
-  padding: 12px;
-  min-width: 300px;
-  max-width: 90vw;
-}
-.lfo-dialog-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 10px;
-}
-.lfo-dialog-title { color: #4a90e2; font-weight: 700; font-size: 14px; }
-.lfo-close { background: transparent; color: #bbb; border: none; font-size: 18px; cursor: pointer; }
-
-/* Toggle Button Styles */
-.toggle-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
-.toggle-button {
-  width: 50px;
-  height: 30px;
-  background: #1a1a1a;
-  border: 2px solid #4a4a4a;
-  border-radius: 15px;
-  color: #ccc;
-  font-size: 10px;
-  font-weight: bold;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 1px;
-}
-
-.toggle-label {
-  font-size: 8px;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  line-height: 1;
-}
-
-.toggle-state {
-  font-size: 9px;
-  font-weight: bold;
-  line-height: 1;
-}
-
-.toggle-button.active {
-  background: #4a90e2;
-  border-color: #4a90e2;
-  color: white;
-}
-
-.toggle-button:hover {
-  border-color: #6aa0f2;
-}
-
-/* Regular Button Styles */
-.button-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
-.control-button {
-  padding: 8px 16px;
-  background: #1a1a1a;
-  border: 2px solid #4a4a4a;
-  border-radius: 6px;
-  color: #ccc;
-  font-size: 10px;
-  font-weight: bold;
-  cursor: pointer;
-  transition: all 0.1s ease;
-}
-
-.control-button:active {
-  background: #4a90e2;
-  border-color: #4a90e2;
-  color: white;
-}
-
-/* Value Display */
-.value-display {
-  margin-top: 8px;
-  font-size: 10px;
-  color: #4a90e2;
-  font-weight: bold;
-  text-align: center;
-  min-height: 12px;
-}
-
-/* Mobile optimizations */
-@media (max-width: 768px) {
-  .midi-control {
-    min-width: 60px;
-    padding: 6px;
-  }
-  
-  .midi-control.compact {
-    min-width: 35px;
-    padding: 2px;
-  }
-  
-  .knob {
-    width: 40px;
-    height: 40px;
-  }
-  
-  .compact .knob {
-    width: 30px;
-    height: 30px;
-  }
-  
-  .fader-container {
-    height: 120px;
-  }
-  
-  .fader {
-    height: 100px;
-  }
-  
-  .control-label {
-    font-size: 9px;
-  }
-  
-  .compact .control-label {
-    font-size: 8px;
-  }
-  
-  .value-display {
-    font-size: 9px;
-    margin-top: 12px; /* Add more space between knob and value to avoid LFO overlap */
-  }
-  
-  .compact .value-display {
-    font-size: 8px;
-    margin-top: 10px;
-  }
-  
-  .compact .knob-label {
-    font-size: 8px;
-  }
-  
-  .toggle-button {
-    width: 45px;
-    height: 28px;
-    font-size: 9px;
-  }
-  
-  .compact .toggle-button {
-    width: 40px;
-    height: 25px;
-    font-size: 8px;
-  }
-  
-  .compact .toggle-label {
-    font-size: 7px;
-  }
-  
-  .compact .toggle-state {
-    font-size: 8px;
-  }
-  
-  .control-button {
-    padding: 6px 12px;
-    font-size: 9px;
-  }
-  
-  .compact .control-button {
-    padding: 4px 8px;
-    font-size: 8px;
-  }
-}
-
-/* Radio Group Styles */
-.radio-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  width: 100%;
-}
-
-.radio-group {
-  display: flex;
-  flex-direction: row;
-  gap: 4px;
-  width: 100%;
-  flex-wrap: wrap;
-  justify-content: center;
-}
-
-.radio-option {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 8px 12px;
-  background: #1a1a1a;
-  border: 2px solid #4a4a4a;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  font-size: 11px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  min-width: 60px;
-  text-align: center;
-  position: relative;
-}
-
-.radio-option:hover {
-  background: #2a2a2a;
-  border-color: #6aa0f2;
-  transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-}
-
-.radio-option.active {
-  background: #4a90e2;
-  border-color: #4a90e2;
-  color: white;
-  box-shadow: 0 0 10px rgba(74, 144, 226, 0.5);
-  transform: translateY(-1px);
-}
-
-.radio-input {
-  position: absolute;
-  opacity: 0;
-  pointer-events: none;
-}
-
-.radio-label {
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  color: #ccc;
-  transition: color 0.2s ease;
-}
-
-.radio-option.active .radio-label {
-  color: white;
-}
-
-/* Compact mode for radio groups */
-.midi-control.compact .radio-group {
-  gap: 2px;
-}
-
-.midi-control.compact .radio-option {
-  padding: 4px 8px;
-  font-size: 9px;
-  min-width: 45px;
-}
-
-.midi-control.compact .radio-label {
-  font-size: 8px;
-}
-
-/* Mobile optimizations for radio groups */
-@media (max-width: 768px) {
-  .radio-group {
-    gap: 3px;
-    flex-wrap: wrap;
-  }
-  
-  .radio-option {
-    padding: 6px 8px;
-    font-size: 10px;
-    min-width: 50px;
-  }
-  
-  .radio-label {
-    font-size: 9px;
-  }
-}
-
-@media (max-width: 480px) {
-  .radio-group {
-    gap: 2px;
-    flex-wrap: wrap;
-  }
-  
-  .radio-option {
-    padding: 4px 6px;
-    font-size: 9px;
-    min-width: 40px;
-  }
-  
-  .radio-label {
-    font-size: 8px;
-  }
-  
-  .compact .toggle-button {
-    width: 35px;
-    height: 22px;
-  }
-  
-  .compact .toggle-label {
-    font-size: 6px;
-  }
-  
-  .compact .toggle-state {
-    font-size: 7px;
-  }
-  
-  .compact .knob-label {
-    font-size: 7px;
-  }
-}
+/* diálogo del LFO */
+.lfo-overlay { position: fixed; inset: 0; z-index: 2000; display: flex; align-items: center; justify-content: center; background: rgba(0, 0, 0, 0.6); }
+.lfo-dialog { min-width: 300px; max-width: 92vw; padding: 14px; border-radius: 10px; background: var(--placa); box-shadow: var(--relieve-1), 0 20px 50px rgba(0, 0, 0, 0.6); color: var(--serigrafia); }
+.lfo-dialog-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.lfo-dialog-title { font: 700 14px/1 var(--f-panel); letter-spacing: 0.14em; text-transform: uppercase; }
+.lfo-close { width: 28px; height: 28px; border: 0; border-radius: 6px; background: var(--placa-2); color: var(--serigrafia); font-size: 18px; line-height: 1; cursor: pointer; }
 </style>

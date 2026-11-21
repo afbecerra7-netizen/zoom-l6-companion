@@ -92,93 +92,27 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="scene-controls">
-    <div class="section-title">Scenes</div>
-    <div class="scene-buttons">
-      <button
-        v-for="scene in activeSceneControls"
-        :key="scene.id"
-        class="scene-button"
-        :class="{ 
-          active: currentScene?.id === scene.id,
-          disabled: !isConnected 
-        }"
-        @click="selectScene(scene)"
-        :disabled="!isConnected"
-        :title="`${scene.name} (PC ${scene.program})`"
-      >
-        {{ scene.id }}
-      </button>
-    </div>
+  <div class="escenas" role="radiogroup" aria-label="Escena">
+    <span class="escenas-rotulo">Escena</span>
+    <button
+      v-for="scene in activeSceneControls"
+      :key="scene.id"
+      type="button"
+      class="tecla tecla-escena"
+      :class="{ on: currentScene?.id === scene.id }"
+      role="radio"
+      :aria-checked="currentScene?.id === scene.id"
+      :disabled="!isConnected"
+      :title="`${scene.name} (PC ${scene.program})`"
+      @click="selectScene(scene)"
+    >
+      {{ scene.id }}
+    </button>
   </div>
 </template>
 
 <style scoped>
-.scene-controls {
-  display: flex;
-  flex-direction: column;
-  width: 100%;
-}
-
-.section-title {
-  font-size: 14px;
-  color: #4a90e2;
-  text-align: center;
-  margin-bottom: 16px;
-  text-transform: uppercase;
-  padding-bottom: 8px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-}
-
-.scene-buttons {
-  display: flex;
-  gap: 8px;
-  justify-content: center;
-  width: 100%;
-}
-
-.scene-button {
-  width: 40px;
-  height: 40px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 6px;
-  background: rgba(255, 255, 255, 0.1);
-  color: #ccc;
-  font-size: 16px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.scene-button:hover:not(.disabled) {
-  background: rgba(255, 255, 255, 0.2);
-  border-color: rgba(255, 255, 255, 0.3);
-}
-
-.scene-button.active {
-  background: rgba(74, 144, 226, 0.3);
-  border-color: #4a90e2;
-  color: #4a90e2;
-}
-
-.scene-button.disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-/* Mobile optimizations */
-@media (max-width: 768px) {
-  .section-title {
-    font-size: 12px;
-  }
-  
-  .scene-button {
-    width: 32px;
-    height: 32px;
-    font-size: 14px;
-  }
-}
+.escenas { display: flex; align-items: center; gap: 6px; }
+.escenas-rotulo { margin-right: 4px; font: 700 11.5px/1 var(--f-panel); letter-spacing: 0.16em; text-transform: uppercase; color: var(--serigrafia-2); }
+.tecla-escena.on { color: var(--hundido); background: linear-gradient(175deg, #fbf7ee, #ddd6c8); }
 </style>

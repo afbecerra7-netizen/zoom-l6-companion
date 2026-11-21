@@ -1,24 +1,21 @@
 <template>
-  <div class="sound-pads">
-    <div class="pads-header">
-      <h2 class="pads-title">Sound Pads</h2>
-    </div>
-    <div class="pads-grid">
+  <div class="grupo sound-pads">
+    <h2 class="t-rotulo">Sound pads</h2>
+    <div class="pads">
       <!-- aria-disabled (not `disabled`) so the tooltip still shows on unmapped pads in every browser -->
       <button
         v-for="pad in soundPads"
         :key="pad.id"
-        class="pad-button"
-        :class="{ 'pad-button--unmapped': isUnmapped(pad) }"
+        type="button"
+        class="tecla pad"
         :aria-disabled="isUnmapped(pad)"
         :title="isUnmapped(pad) ? UNMAPPED_TOOLTIP : undefined"
-        @mousedown="noteOn(pad)"
-        @mouseup="noteOff(pad)"
-        @touchstart.prevent="noteOn(pad)"
-        @touchend.prevent="noteOff(pad)"
+        @pointerdown="noteOn(pad)"
+        @pointerup="noteOff(pad)"
+        @pointercancel="noteOff(pad)"
       >
-        <div class="pad-id">{{ pad.id }}</div>
-        <div class="pad-note">{{ isUnmapped(pad) ? 'Not Mapped' : `MIDI ${midiNoteLabel(pad.note)}` }}</div>
+        <span class="pad-id">{{ pad.id }}</span>
+        <span class="pad-nota">{{ isUnmapped(pad) ? 'sin nota' : midiNoteLabel(pad.note) }}</span>
       </button>
     </div>
   </div>
@@ -53,136 +50,8 @@ function noteOff(pad: { note: number; channel: number }) {
 </script>
 
 <style scoped>
-.sound-pads {
-  background: #1e1e1e;
-  border: 1px solid #333;
-  border-radius: 12px;
-  padding: 16px;
-  margin: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-}
-
-.pads-header {
-  text-align: center;
-  margin-bottom: 16px;
-  padding-bottom: 8px;
-  border-bottom: 1px solid #333;
-}
-
-.pads-title {
-  color: #4a90e2;
-  font-size: 18px;
-  font-weight: bold;
-  margin: 0;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-}
-
-.pads-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-  gap: 16px;
-}
-
-.pad-button {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  gap: 8px;
-  height: 120px;
-  background: #2a2a2a;
-  border: 2px solid #444;
-  border-radius: 12px;
-  color: #fff;
-  font-weight: 700;
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.pad-button:hover {
-  border-color: #4a90e2;
-  transform: translateY(-2px);
-}
-
-.pad-button:active {
-  background: #4a90e2;
-  border-color: #4a90e2;
-}
-
-.pad-button--unmapped,
-.pad-button--unmapped:hover,
-.pad-button--unmapped:active {
-  opacity: 0.4;
-  cursor: not-allowed;
-  background: #2a2a2a;
-  border-color: #444;
-  transform: none;
-}
-
-.pad-id {
-  font-size: 22px;
-}
-
-.pad-note {
-  font-size: 12px;
-  color: #9bbcf3;
-}
-
-/* Mobile optimizations */
-@media (max-width: 768px) {
-  .sound-pads {
-    padding: 12px;
-    margin: 4px;
-  }
-  
-  .pads-title {
-    font-size: 16px;
-  }
-  
-  .pads-grid {
-    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-    gap: 12px;
-  }
-  
-  .pad-button {
-    height: 100px;
-  }
-  
-  .pad-id {
-    font-size: 20px;
-  }
-  
-  .pad-note {
-    font-size: 11px;
-  }
-}
-
-@media (max-width: 480px) {
-  .sound-pads {
-    padding: 4px;
-    margin: 1px;
-  }
-  
-  .pads-title {
-    font-size: 14px;
-  }
-  
-  .pads-grid {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 4px;
-  }
-  
-  .pad-button {
-    height: 80px;
-  }
-  
-  .pad-id {
-    font-size: 18px;
-  }
-  
-  .pad-note {
-    font-size: 10px;
-  }
-}
+.pads { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 6px; }
+.pad { flex-direction: column; gap: 3px; height: 44px; }
+.pad-id { font-size: 16px; }
+.pad-nota { font: 500 10px/1 var(--f-datos); letter-spacing: 0; text-transform: none; color: var(--serigrafia-3); }
 </style>

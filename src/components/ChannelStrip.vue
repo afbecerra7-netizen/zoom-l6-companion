@@ -1,244 +1,109 @@
 <template>
-  <div class="channel-strip" :class="{ compact: compactMode }">
-    <div class="channel-header">
-      <h3 class="channel-title">CH {{ channelData.channel }}</h3>
-    </div>
-    
-    <!-- Compact Mode: All controls in single row -->
-    <div v-if="compactMode" class="compact-controls">
+  <article
+    class="tira"
+    :class="{ estereo, muda: values.mute > 63 }"
+    :aria-label="`Canal ${channelData.channel}`"
+    @keydown.esc="cierraMenu"
+  >
+    <div class="tira-cab">
+      <button
+        type="button"
+        class="tira-num"
+        :title="`Opciones del canal ${channelData.channel}`"
+        aria-haspopup="menu"
+        :aria-expanded="menuAbierto"
+        @click="menuAbierto = !menuAbierto"
+      >{{ channelData.channel }}</button>
+      <span class="tira-tipo">{{ estereo ? 'ESTÉREO' : 'MONO' }}</span>
       <MidiControl
-        :control="createCompactControl(channelData.controls.eq.high, 'hi')"
-        v-model="values.eqHigh"
-        @change="onControlChange('eqHigh', $event)"
-        :compact="true"
-      />
-      <MidiControl
-        :control="createCompactControl(channelData.controls.eq.mid, 'mid')"
-        v-model="values.eqMid"
-        @change="onControlChange('eqMid', $event)"
-        :compact="true"
-      />
-      <MidiControl
-        :control="createCompactControl(channelData.controls.eq.midFreq, 'freq')"
-        v-model="values.eqMidFreq"
-        @change="onControlChange('eqMidFreq', $event)"
-        :compact="true"
-      />
-      <MidiControl
-        :control="createCompactControl(channelData.controls.eq.low, 'lo')"
-        v-model="values.eqLow"
-        @change="onControlChange('eqLow', $event)"
-        :compact="true"
+        v-if="channelData.controls.monoX2"
+        class="tira-extra"
+        :control="channelData.controls.monoX2"
+        v-model="values.monoX2"
+        @change="onControlChange('monoX2', $event)"
+        forma="mini"
+        rotulo="MONO x2"
+        ref="monoX2Ref"
       />
       <MidiControl
-        :control="createCompactControl(channelData.controls.aux1, 'aux1')"
-        v-model="values.aux1"
-        @change="onControlChange('aux1', $event)"
-        :compact="true"
+        v-else-if="channelData.controls.usb12"
+        class="tira-extra"
+        :control="channelData.controls.usb12"
+        v-model="values.usb12"
+        @change="onControlChange('usb12', $event)"
+        forma="mini"
+        rotulo="USB 1/2"
+        ref="usb12Ref"
       />
       <MidiControl
-        :control="createCompactControl(channelData.controls.aux2, 'aux2')"
-        v-model="values.aux2"
-        @change="onControlChange('aux2', $event)"
-        :compact="true"
+        v-else-if="channelData.controls.usb34"
+        class="tira-extra"
+        :control="channelData.controls.usb34"
+        v-model="values.usb34"
+        @change="onControlChange('usb34', $event)"
+        forma="mini"
+        rotulo="USB 3/4"
+        ref="usb34Ref"
       />
-          <MidiControl
-        :control="createCompactControl(channelData.controls.efxSend, 'efx')"
-        v-model="values.efxSend"
-        @change="onControlChange('efxSend', $event)"
-        :compact="true"
-      />
-      <MidiControl
-        v-if="mixerType === 'l6max' && channelData.controls.subMix"
-        :control="createCompactControl(channelData.controls.subMix, 'sub')"
-        v-model="values.subMix"
-        @change="onControlChange('subMix', $event)"
-        :compact="true"
-      />
-      <MidiControl
-        :control="createCompactControl(channelData.controls.pan, 'pan')"
-        v-model="values.pan"
-        @change="onControlChange('pan', $event)"
-        :compact="true"
-      />
-      <MidiControl
-        :control="createCompactControl(channelData.controls.volume, 'vol')"
-        v-model="values.volume"
-        @change="onControlChange('volume', $event)"
-        :compact="true"
-      />
-      <div class="compact-control-slot">
-        <MidiControl
-          v-if="channelData.controls.monoX2"
-          :control="createCompactControl(channelData.controls.monoX2, 'mono')"
-          v-model="values.monoX2"
-          @change="onControlChange('monoX2', $event)"
-          :compact="true"
-        />
-        <MidiControl
-          v-else-if="channelData.controls.usb12"
-          :control="createCompactControl(channelData.controls.usb12, 'usb12')"
-          v-model="values.usb12"
-          @change="onControlChange('usb12', $event)"
-          :compact="true"
-        />
-        <MidiControl
-          v-else-if="channelData.controls.usb34"
-          :control="createCompactControl(channelData.controls.usb34, 'usb34')"
-          v-model="values.usb34"
-          @change="onControlChange('usb34', $event)"
-          :compact="true"
-        />
-      </div>
-      <MidiControl
-        :control="createCompactControl(channelData.controls.mute, 'mute')"
-        v-model="values.mute"
-        @change="onControlChange('mute', $event)"
-        :compact="true"
-      />
-    </div>
-    
-    <!-- Normal Mode: Grouped sections -->
-    <div v-else class="controls-section">
-      <!-- EQ Section -->
-      <div class="eq-section">
-        <div class="section-title">EQ</div>
-        <div class="eq-controls">
-          <MidiControl
-            :control="channelData.controls.eq.high"
-            v-model="values.eqHigh"
-            @change="onControlChange('eqHigh', $event)"
-            ref="eqHighRef"
-          />
-          <MidiControl
-            :control="channelData.controls.eq.mid"
-            v-model="values.eqMid"
-            @change="onControlChange('eqMid', $event)"
-            ref="eqMidRef"
-          />
-          <MidiControl
-            :control="channelData.controls.eq.midFreq"
-            v-model="values.eqMidFreq"
-            @change="onControlChange('eqMidFreq', $event)"
-            ref="eqMidFreqRef"
-          />
-          <MidiControl
-            :control="channelData.controls.eq.low"
-            v-model="values.eqLow"
-            @change="onControlChange('eqLow', $event)"
-            ref="eqLowRef"
-          />
-        </div>
-      </div>
-      
-      <!-- Sends -->
-      <div class="aux-section">
-        <div class="section-title">Sends</div>
-        <div class="aux-controls">
-          <MidiControl
-            :control="channelData.controls.aux1"
-            v-model="values.aux1"
-            @change="onControlChange('aux1', $event)"
-            ref="aux1Ref"
-          />
-          <MidiControl
-            :control="channelData.controls.aux2"
-            v-model="values.aux2"
-            @change="onControlChange('aux2', $event)"
-            ref="aux2Ref"
-          />
-          <MidiControl
-            :control="channelData.controls.efxSend"
-            v-model="values.efxSend"
-            @change="onControlChange('efxSend', $event)"
-            ref="efxSendRef"
-          />
-          <MidiControl
-            v-if="mixerType === 'l6max' && channelData.controls.subMix"
-            :control="channelData.controls.subMix"
-            v-model="values.subMix"
-            @change="onControlChange('subMix', $event)"
-            ref="subMixRef"
-          />
-        </div>
-      </div>
-      
-      <!-- Main (Pan, Level, Buttons) -->
-      <div class="main-section">
-        <div class="section-title">Main</div>
-        <div class="main-controls">
-          <MidiControl
-            :control="channelData.controls.pan"
-            v-model="values.pan"
-            @change="onControlChange('pan', $event)"
-            ref="panRef"
-          />
-          <MidiControl
-            :control="channelData.controls.volume"
-            v-model="values.volume"
-            @change="onControlChange('volume', $event)"
-            ref="volumeRef"
-          />
-          <MidiControl
-            v-if="channelData.controls.monoX2"
-            :control="channelData.controls.monoX2"
-            v-model="values.monoX2"
-            @change="onControlChange('monoX2', $event)"
-            ref="monoX2Ref"
-          />
-          <MidiControl
-            v-else-if="channelData.controls.usb12"
-            :control="channelData.controls.usb12"
-            v-model="values.usb12"
-            @change="onControlChange('usb12', $event)"
-            ref="usb12Ref"
-          />
-          <MidiControl
-            v-else-if="channelData.controls.usb34"
-            :control="channelData.controls.usb34"
-            v-model="values.usb34"
-            @change="onControlChange('usb34', $event)"
-            ref="usb34Ref"
-          />
-          <MidiControl
-            :control="channelData.controls.mute"
-            v-model="values.mute"
-            @change="onControlChange('mute', $event)"
-            ref="muteRef"
-          />
-        </div>
-      </div>
-      
-      <!-- Reset Section -->
-      <div class="reset-section">
-        <button 
-          @click="resetToDefaults"
-          class="reset-button"
-          title="Reset channel to defaults"
-        >
-          Reset
-        </button>
-        <button 
-          @click="pauseResumeAllLfos"
-          class="lfo-control-button"
-          :class="{ 
-            disabled: !hasActiveOrPausedLfos,
-            pause: hasActiveLfos,
-            resume: hasPausedLfos
-          }"
-          :disabled="!hasActiveOrPausedLfos"
-          :title="hasActiveLfos ? 'Pause all LFOs on this channel' : hasPausedLfos ? 'Resume all LFOs on this channel' : 'No active or paused LFOs on this channel'"
-        >
-          {{ lfoButtonText }}
-        </button>
+
+      <div v-if="menuAbierto" class="tira-menu" role="menu">
+        <button type="button" role="menuitem" @click="alReiniciar">Reiniciar este canal</button>
+        <button type="button" role="menuitem" @click="alReiniciarTodos">Reiniciar todos los canales</button>
+        <button type="button" role="menuitem" :disabled="!hasActiveOrPausedLfos" @click="alPausarLfos">{{ lfoButtonText }}</button>
       </div>
     </div>
-  </div>
+
+    <div>
+      <h2 class="t-rotulo">EQ</h2>
+      <div class="rejilla">
+        <MidiControl :control="channelData.controls.eq.high" v-model="values.eqHigh" @change="onControlChange('eqHigh', $event)" unidad="eq" rotulo="HIGH" ref="eqHighRef" />
+        <MidiControl :control="channelData.controls.eq.mid" v-model="values.eqMid" @change="onControlChange('eqMid', $event)" unidad="eq" rotulo="MID" ref="eqMidRef" />
+        <MidiControl :control="channelData.controls.eq.midFreq" v-model="values.eqMidFreq" @change="onControlChange('eqMidFreq', $event)" unidad="frec" rotulo="FREQ" ref="eqMidFreqRef" />
+        <MidiControl :control="channelData.controls.eq.low" v-model="values.eqLow" @change="onControlChange('eqLow', $event)" unidad="eq" rotulo="LOW" ref="eqLowRef" />
+      </div>
+    </div>
+
+    <div>
+      <h2 class="t-rotulo">Envíos</h2>
+      <div class="rejilla">
+        <MidiControl :control="channelData.controls.aux1" v-model="values.aux1" @change="onControlChange('aux1', $event)" unidad="envio" rotulo="AUX 1" ref="aux1Ref" />
+        <MidiControl :control="channelData.controls.aux2" v-model="values.aux2" @change="onControlChange('aux2', $event)" unidad="envio" rotulo="AUX 2" ref="aux2Ref" />
+        <MidiControl :control="channelData.controls.efxSend" v-model="values.efxSend" @change="onControlChange('efxSend', $event)" unidad="envio" rotulo="EFX" ref="efxSendRef" />
+        <MidiControl
+          v-if="mixerType === 'l6max' && channelData.controls.subMix"
+          :control="channelData.controls.subMix"
+          v-model="values.subMix"
+          @change="onControlChange('subMix', $event)"
+          unidad="envio"
+          rotulo="SUB"
+          ref="subMixRef"
+        />
+      </div>
+    </div>
+
+    <div class="fila-pan">
+      <MidiControl :control="channelData.controls.pan" v-model="values.pan" @change="onControlChange('pan', $event)" unidad="pan" rotulo="PAN" ref="panRef" />
+      <MidiControl :control="channelData.controls.mute" v-model="values.mute" @change="onControlChange('mute', $event)" forma="mute" tono="ambar" rotulo="MUTE" ref="muteRef" />
+    </div>
+
+    <MidiControl
+      :control="channelData.controls.volume"
+      v-model="values.volume"
+      @change="onControlChange('volume', $event)"
+      vista="fader"
+      unidad="nivel"
+      rotulo="Nivel"
+      ref="volumeRef"
+    />
+
+    <TapeLabel :canal="channelData.channel" />
+  </article>
 </template>
 
 <script setup lang="ts">
 import { reactive, ref, computed } from 'vue';
 import MidiControl from './MidiControl.vue';
+import TapeLabel from './TapeLabel.vue';
 import type { ChannelControls } from '../config/midiConfig';
 
 interface Props {
@@ -249,6 +114,7 @@ interface Props {
 
 interface Emits {
   (e: 'controlChange', channel: number, control: string, value: number): void;
+  (e: 'resetAll'): void;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -256,6 +122,28 @@ const props = withDefaults(defineProps<Props>(), {
   mixerType: 'l6'
 });
 const emit = defineEmits<Emits>();
+
+// L6max: canales 1–4 mono y 5–8 estéreo. L6: 1–2 mono y 3–6 estéreo.
+const estereo = computed(() => props.channelData.channel >= (props.mixerType === 'l6max' ? 5 : 3));
+
+// Menú del canal: se abre desde su número. Reiniciar y pausar no son gestos de cada momento,
+// así que no ocupan sitio en la tira.
+const menuAbierto = ref(false);
+function cierraMenu() {
+  menuAbierto.value = false;
+}
+function alReiniciar() {
+  resetToDefaults();
+  cierraMenu();
+}
+function alReiniciarTodos() {
+  emit('resetAll');
+  cierraMenu();
+}
+function alPausarLfos() {
+  pauseResumeAllLfos();
+  cierraMenu();
+}
 
 // Individual refs for each control type
 const eqHighRef = ref<any>(null);
@@ -293,14 +181,6 @@ const values = reactive({
 
 function onControlChange(controlName: string, value: number) {
   emit('controlChange', props.channelData.channel, controlName, value);
-}
-
-// Create compact control with short label
-function createCompactControl(control: any, shortLabel: string) {
-  return {
-    ...control,
-    name: shortLabel
-  };
 }
 
 // Method to reset all controls to defaults
@@ -371,9 +251,9 @@ const hasActiveOrPausedLfos = computed(() => {
 });
 
 const lfoButtonText = computed(() => {
-  if (!hasActiveOrPausedLfos.value) return 'No LFOs';
-  if (hasActiveLfos.value) return 'Pause LFOs';
-  return 'Resume LFOs';
+  if (!hasActiveOrPausedLfos.value) return 'Sin LFO en este canal';
+  if (hasActiveLfos.value) return 'Pausar los LFO';
+  return 'Reanudar los LFO';
 });
 
 // Method to pause/resume all LFOs on this channel
@@ -431,384 +311,20 @@ defineExpose({
 </script>
 
 <style scoped>
-.channel-strip {
-  display: flex;
-  flex-direction: column;
-  background: #1e1e1e;
-  border: 1px solid #333;
-  border-radius: 12px;
-  padding: 12px;
-  margin: 8px;
-  min-width: 120px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-}
-
-.channel-header {
-  text-align: center;
-  margin-bottom: 16px;
-  padding-bottom: 8px;
-  border-bottom: 1px solid #333;
-}
-
-.channel-title {
-  color: #4a90e2;
-  font-size: 14px;
-  font-weight: bold;
-  margin: 0;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-}
-
-.controls-section {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  flex: 1;
-}
-
-.control-group {
-  display: flex;
-  justify-content: left;
-}
-
-.section-title {
-  font-size: 10px;
-  color: #888;
-  text-align: center;
-  margin-bottom: 8px;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  font-weight: 600;
-}
-
-.eq-section {
-  background: rgba(255, 255, 255, 0.05);
-  padding: 8px;
-  border-radius: 8px;
-  min-width: 25%; /* Based on 4 EQ controls */
-}
-
-.eq-controls {
-  display: flex;
-  justify-content: space-between;
-  gap: 4px;
-}
-
-.aux-section {
-  background: rgba(255, 255, 255, 0.05);
-  padding: 8px;
-  border-radius: 8px;
-  min-width: 25%; /* Match EQ section width */
-}
-
-.aux-controls {
-  display: flex;
-  justify-content: space-between;
-  gap: 8px;
-}
-
-.main-section {
-  background: rgba(255, 255, 255, 0.05);
-  padding: 8px;
-  border-radius: 8px;
-  min-width: 25%; /* Match EQ section width */
-}
-
-.main-controls {
-  display: flex;
-  justify-content: space-between;
-  gap: 8px;
-}
-
-
-.button-section {
-  display: flex;
-  justify-content: space-between;
-  gap: 8px;
-}
-
-.fader-section {
-  display: flex;
-  justify-content: center;
-  margin-top: auto;
-  padding-top: 16px;
-}
-
-/* Compact Mode */
-.channel-strip.compact {
-  min-width: auto;
-  width: 100%;
-}
-
-.compact-controls {
-  display: flex;
-  gap: 4px;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: nowrap;
-}
-
-.compact-controls > * {
-  flex-shrink: 0;
-  flex-grow: 0;
-  width: 40px;
-  min-width: 40px;
-  max-width: 40px;
-}
-
-.compact-control-slot {
-  min-height: 40px;
-  width: 40px;
-  min-width: 40px;
-  max-width: 40px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  flex-grow: 0;
-}
-
-/* Mobile optimizations */
-@media (max-width: 768px) {
-  .channel-strip {
-    min-width: 100px;
-    padding: 8px;
-    margin: 0;
-    width: 100%;
-  }
-  
-  .channel-strip.compact {
-    padding: 6px;
-    margin: 4px;
-    width: calc(100% - 8px);
-  }
-  
-  .eq-controls,
-  .aux-controls {
-    gap: 2px;
-  }
-  
-  .button-section {
-    gap: 4px;
-  }
-  
-  .compact-controls {
-    gap: 2px;
-    flex-wrap: nowrap;
-  }
-  
-  .compact-controls > * {
-    width: 35px;
-    min-width: 35px;
-    max-width: 35px;
-  }
-  
-  .compact-control-slot {
-    min-height: 35px;
-    width: 35px;
-    min-width: 35px;
-    max-width: 35px;
-  }
-  
-  .section-title {
-    font-size: 9px;
-  }
-}
-
-@media (max-width: 480px) {
-  .channel-strip {
-    min-width: 80px;
-    padding: 3px;
-    margin: 0;
-    width: 100%;
-  }
-  
-  .channel-strip.compact {
-    padding: 2px;
-    margin: 2px;
-    width: calc(100% - 4px);
-  }
-  
-  .channel-title {
-    font-size: 12px;
-  }
-  
-  .section-title {
-    font-size: 8px;
-  }
-  
-  .compact-controls {
-    gap: 6px;
-    justify-content: center;
-    flex-wrap: nowrap;
-  }
-  
-  .compact-controls > * {
-    width: 30px;
-    min-width: 30px;
-    max-width: 30px;
-  }
-  
-  .compact-control-slot {
-    min-height: 30px;
-    width: 30px;
-    min-width: 30px;
-    max-width: 30px;
-  }
-  
-  /* Stack sections vertically on very small screens */
-  .controls-section {
-    flex-direction: column;
-    gap: 4px;
-  }
-  
-  .eq-section,
-  .aux-section,
-  .main-section {
-    padding: 3px;
-  }
-  
-  .eq-controls,
-  .aux-controls,
-  .main-controls {
-    gap: 2px;
-  }
-  
-}
-
-/* Reset Section */
-.reset-section {
-  display: flex;
-  justify-content: center;
-  gap: 8px;
-  margin-top: 12px;
-  padding-top: 8px;
-  border-top: 1px solid #333;
-}
-
-.reset-button {
-  padding: 6px 12px;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 6px;
-  color: #ccc;
-  font-size: 10px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  flex: 1;
-  min-width: 0;
-}
-
-.reset-button:hover {
-  background: #f44336;
-  border-color: #f44336;
-  color: white;
-  transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(244, 67, 54, 0.3);
-}
-
-.reset-button:active {
-  transform: translateY(0);
-  box-shadow: 0 1px 4px rgba(244, 67, 54, 0.3);
-}
-
-.lfo-control-button {
-  padding: 6px 12px;
-  background: #ff9800;
-  border: 1px solid #f57c00;
-  border-radius: 6px;
-  color: white;
-  font-size: 10px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  flex: 1;
-  min-width: 0;
-}
-
-.lfo-control-button.pause {
-  background: #4a90e2;
-  border-color: #3a7bc8;
-}
-
-.lfo-control-button.resume {
-  background: #f5a623;
-  border-color: #e09512;
-}
-
-.lfo-control-button:hover {
-  background: #fb8c00;
-  border-color: #ef6c00;
-  transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(255, 152, 0, 0.3);
-}
-
-.lfo-control-button.pause:hover {
-  background: #5a9ff2;
-  border-color: #4a8dd8;
-  box-shadow: 0 2px 8px rgba(74, 144, 226, 0.3);
-}
-
-.lfo-control-button.resume:hover {
-  background: #f7b84d;
-  border-color: #f0a733;
-  box-shadow: 0 2px 8px rgba(245, 166, 35, 0.3);
-}
-
-.lfo-control-button:active {
-  transform: translateY(0);
-  box-shadow: 0 1px 4px rgba(255, 152, 0, 0.3);
-}
-
-.lfo-control-button.disabled,
-.lfo-control-button:disabled {
-  background: #666;
-  border-color: #555;
-  color: #999;
-  cursor: not-allowed;
-  transform: none;
-  box-shadow: none;
-}
-
-.lfo-control-button.disabled:hover,
-.lfo-control-button:disabled:hover {
-  background: #666;
-  border-color: #555;
-  transform: none;
-  box-shadow: none;
-}
-
-/* Mobile optimizations for reset and LFO disable buttons */
-@media (max-width: 768px) {
-  .reset-section {
-    margin-top: 8px;
-    padding-top: 6px;
-    gap: 6px;
-  }
-  
-  .reset-button,
-  .lfo-control-button {
-    padding: 4px 10px;
-    font-size: 9px;
-  }
-}
-
-@media (max-width: 480px) {
-  .reset-section {
-    margin-top: 6px;
-    padding-top: 4px;
-    gap: 4px;
-  }
-  
-  .reset-button,
-  .lfo-control-button {
-    padding: 3px 8px;
-    font-size: 8px;
-  }
-}
+.tira { position: relative; display: flex; flex-direction: column; gap: 7px; min-width: 0; min-height: 0; padding: 8px 7px 10px; border-radius: 8px; background: var(--placa); box-shadow: var(--relieve-1); }
+.tira.estereo { background: linear-gradient(180deg, #282523, var(--placa) 30%); }
+.tira-cab { position: relative; display: flex; align-items: center; gap: 6px; height: 24px; }
+.tira-num { padding: 0 2px; border: 0; border-radius: 4px; background: none; cursor: pointer; font: 800 21px/1 var(--f-panel); letter-spacing: 0.04em; color: var(--serigrafia); }
+.tira-num:hover, .tira-num[aria-expanded="true"] { background: var(--placa-2); }
+.tira-num:focus-visible { outline: 2px solid var(--vfd); outline-offset: 1px; }
+.tira-tipo { font: 600 10.5px/1 var(--f-panel); letter-spacing: 0.14em; color: var(--serigrafia-3); }
+.tira-extra { margin-left: auto; }
+.tira-menu { position: absolute; left: 0; top: calc(100% + 4px); z-index: 20; display: flex; flex-direction: column; min-width: 190px; padding: 4px; border-radius: 8px; background: #0e0d0c; border: 1px solid #44403b; box-shadow: 0 10px 24px rgba(0, 0, 0, 0.6); }
+.tira-menu button { padding: 8px 10px; border: 0; border-radius: 5px; background: none; text-align: left; cursor: pointer; font: 500 13px/1.2 var(--f-texto); color: var(--serigrafia); }
+.tira-menu button:hover:not(:disabled) { background: var(--placa-2); }
+.tira-menu button:disabled { cursor: default; color: var(--inactivo); }
+.rejilla { display: grid; grid-template-columns: 1fr 1fr; justify-items: center; row-gap: 3px; margin-top: 5px; }
+.fila-pan { display: flex; align-items: center; justify-content: space-around; }
+/* canal en mute: lo que suena se atenúa; la tecla y la cinta no */
+.tira.muda :deep(.perilla), .tira.muda :deep(.fader), .tira.muda :deep(.fader-valor) { opacity: 0.5; }
 </style>
