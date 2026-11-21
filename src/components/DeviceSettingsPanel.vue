@@ -570,62 +570,9 @@ onUnmounted(() => {
   background: linear-gradient(175deg, #fbf7ee, #ddd6c8);
 }
 
-/* Armoniza DeviceNotice (sin tocar el componente compartido) con los tokens de TAPE 101. */
+/* DeviceNotice ya trae la gráfica de TAPE 101; aquí solo el margen, que lo da la rejilla. */
 .device-settings-panel :deep(.device-notice) {
   margin: 0;
-  padding: 9px 12px;
-  border: 0;
-  border-left: 3px solid var(--linea);
-  border-radius: 6px;
-  background: var(--hundido);
-  box-shadow: var(--hueco);
-  font: 400 13px/1.45 var(--f-texto);
-  color: var(--serigrafia-2);
-}
-
-.device-settings-panel :deep(.device-notice--info) {
-  border-left-color: var(--serigrafia-3);
-  color: var(--serigrafia-2);
-}
-
-.device-settings-panel :deep(.device-notice--success) {
-  border-left-color: var(--verde);
-  color: var(--verde);
-}
-
-.device-settings-panel :deep(.device-notice--warn) {
-  border-left-color: var(--ambar);
-  color: var(--ambar);
-}
-
-.device-settings-panel :deep(.device-notice--error) {
-  border-left-color: var(--rojo);
-  color: var(--rojo);
-}
-
-.device-settings-panel :deep(.device-notice--subtle) {
-  padding: 0;
-  border-left: 0;
-  background: none;
-  box-shadow: none;
-  font: 400 12.5px/1.45 var(--f-texto);
-  color: var(--serigrafia-3);
-}
-
-.device-settings-panel :deep(.device-notice--subtle.device-notice--info) {
-  color: var(--serigrafia-3);
-}
-
-.device-settings-panel :deep(.device-notice--subtle.device-notice--warn) {
-  color: var(--ambar);
-}
-
-.device-settings-panel :deep(.device-notice--subtle.device-notice--error) {
-  color: var(--rojo);
-}
-
-.device-settings-panel :deep(.device-notice--subtle.device-notice--success) {
-  color: var(--verde);
 }
 
 @media (max-width: 480px) {

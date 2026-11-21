@@ -26,62 +26,51 @@ withDefaults(defineProps<Props>(), {
 </template>
 
 <style scoped>
+/* Lenguaje visual de TAPE 101 (src/assets/tape101.css): placa hundida y un filo de color que dice
+   qué clase de aviso es. Cada color de lámpara significa una sola cosa: verde bien, ámbar aviso,
+   rojo error; la información va sin color. */
 .device-notice {
-  font-size: 13px;
-  line-height: 1.5;
   margin: 0 0 12px 0;
-  padding: 10px 12px;
+  padding: 9px 12px;
+  border: 0;
+  border-left: 3px solid var(--linea);
   border-radius: 6px;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid transparent;
-  color: #ccc;
-}
-
-.device-notice--success {
-  background: rgba(76, 175, 80, 0.15);
-  border-color: rgba(76, 175, 80, 0.35);
-  color: #a5d6a7;
-}
-
-.device-notice--error {
-  background: rgba(244, 67, 54, 0.12);
-  border-color: rgba(244, 67, 54, 0.35);
-  color: #ffcdd2;
-}
-
-.device-notice--warn {
-  background: rgba(255, 152, 0, 0.12);
-  border-color: rgba(255, 152, 0, 0.35);
-  color: #ffcc80;
+  background: var(--hundido);
+  box-shadow: var(--hueco);
+  font: 400 13px/1.45 var(--f-texto);
+  color: var(--serigrafia-2);
 }
 
 .device-notice--info {
-  background: rgba(74, 144, 226, 0.12);
-  border-color: rgba(74, 144, 226, 0.35);
-  color: #b3d1f5;
+  border-left-color: var(--serigrafia-3);
 }
 
-/* Inline hint variant: the plain-text style the mass-storage hints used. */
+.device-notice--success {
+  border-left-color: var(--verde);
+  color: var(--verde);
+}
+
+.device-notice--warn {
+  border-left-color: var(--ambar);
+  color: var(--ambar);
+}
+
+.device-notice--error {
+  border-left-color: var(--rojo);
+  color: var(--rojo);
+}
+
+/* Pista en línea, sin placa. */
 .device-notice--subtle {
-  background: none;
-  border-color: transparent;
   padding: 0;
-  color: #888;
+  border-left: 0;
+  background: none;
+  box-shadow: none;
+  font: 400 12.5px/1.45 var(--f-texto);
+  color: var(--serigrafia-3);
 }
 
-.device-notice--subtle.device-notice--warn {
-  color: #ffb74d;
-}
-
-.device-notice--subtle.device-notice--error {
-  color: #ef9a9a;
-}
-
-.device-notice--subtle.device-notice--success {
-  color: #a5d6a7;
-}
-
-.device-notice--subtle.device-notice--info {
-  color: #8ab4e8;
-}
+.device-notice--subtle.device-notice--success { color: var(--verde); }
+.device-notice--subtle.device-notice--warn { color: var(--ambar); }
+.device-notice--subtle.device-notice--error { color: var(--rojo); }
 </style>

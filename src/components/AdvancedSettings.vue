@@ -1136,34 +1136,9 @@ watch(() => props.isVisible, (visible) => {
   height: 7px;
 }
 
-/* Armoniza DeviceNotice dentro de Sound Pads (sin tocar el componente compartido). */
+/* DeviceNotice ya trae la gráfica de TAPE 101; aquí solo el margen, que lo da la fila. */
 .advanced-settings-dialog :deep(.device-notice) {
   margin: 0;
-  padding: 9px 12px;
-  border: 0;
-  border-left: 3px solid var(--linea);
-  border-radius: 6px;
-  background: var(--hundido);
-  box-shadow: var(--hueco);
-  font: 400 13px/1.45 var(--f-texto);
-  color: var(--serigrafia-2);
-}
-
-.advanced-settings-dialog :deep(.device-notice--subtle) {
-  padding: 0;
-  border-left: 0;
-  background: none;
-  box-shadow: none;
-  font: 400 12.5px/1.45 var(--f-texto);
-  color: var(--serigrafia-3);
-}
-
-.advanced-settings-dialog :deep(.device-notice--subtle.device-notice--warn) {
-  color: var(--ambar);
-}
-
-.advanced-settings-dialog :deep(.device-notice--subtle.device-notice--error) {
-  color: var(--rojo);
 }
 
 @media (max-width: 600px) {
