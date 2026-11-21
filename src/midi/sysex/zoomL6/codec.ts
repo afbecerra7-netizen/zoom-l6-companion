@@ -4,7 +4,7 @@
  * All multi-byte parameter values are little-endian streams of 7-bit bytes (matching other
  * Zoom gear, e.g. the MS-50G `31 nn pp vvLSB vvMSB` pattern).
  */
-import { encodingWidth, type ParamDef } from './params';
+import { encodingWidth, type ParamDef, type ZoomModel } from './params';
 
 /** Thrown by `decodeParamValue` when the byte count doesn't match the encoding's expected width.
  * This mismatch is the SysEx explorer's signal that a placeholder group/index guess is wrong. */
@@ -64,14 +64,19 @@ function isSpecialValue(def: ParamDef, value: number): boolean {
  * one of `def.specialValues`), applies `def.deviceOffset`, then packs per `def.encoding`.
  * Throws `NotSupported` for `ascii` encodings — those hold text, not numbers (see `decodeAscii`).
  */
-export function encodeParamValue(def: ParamDef, value: number): number[] {
+/** `0` ↔ `1` for a two-valued param whose device byte is inverted on `model` (see `ParamDef.invertedOn`). */
+export function invertsOn(def: ParamDef, model?: ZoomModel | null): boolean {
+  return model != null && (def.invertedOn?.includes(model) ?? false) && def.range.min === 0 && def.range.max === 1;
+}
+
+export function encodeParamValue(def: ParamDef, value: number, model?: ZoomModel | null): number[] {
   if (def.encoding.kind === 'ascii') {
     throw new NotSupported(`encodeParamValue: "${def.id}" uses ascii encoding; numeric values are not supported`);
   }
   const clamped = isSpecialValue(def, value)
     ? value
     : Math.min(def.range.max, Math.max(def.range.min, value));
-  const deviceValue = clamped + (def.deviceOffset ?? 0);
+  const deviceValue = (invertsOn(def, model) ? 1 - clamped : clamped) + (def.deviceOffset ?? 0);
   const width = encodingWidth(def.encoding) as 1 | 2 | 4;
   return encode7bitLE(deviceValue, width);
 }
@@ -81,7 +86,7 @@ export function encodeParamValue(def: ParamDef, value: number): number[] {
  * Throws `ParamWidthMismatch` when `bytes.length` doesn't match `encodingWidth(def.encoding)` —
  * the SysEx explorer relies on this to flag a wrong placeholder address.
  */
-export function decodeParamValue(def: ParamDef, bytes: readonly number[]): number {
+export function decodeParamValue(def: ParamDef, bytes: readonly number[], model?: ZoomModel | null): number {
   if (def.encoding.kind === 'ascii') {
     throw new NotSupported(`decodeParamValue: "${def.id}" uses ascii encoding; use decodeAscii`);
   }
@@ -90,7 +95,8 @@ export function decodeParamValue(def: ParamDef, bytes: readonly number[]): numbe
     throw new ParamWidthMismatch(expected, bytes.length);
   }
   const deviceValue = decode7bitLE(bytes);
-  return deviceValue - (def.deviceOffset ?? 0);
+  const value = deviceValue - (def.deviceOffset ?? 0);
+  return invertsOn(def, model) ? 1 - value : value;
 }
 
 /** Decodes fixed-length ASCII bytes to a string, dropping trailing NUL padding. */

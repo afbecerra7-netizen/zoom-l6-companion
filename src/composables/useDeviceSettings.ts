@@ -68,6 +68,8 @@ const WRITE_THROTTLE_MS = 50;
 
 /** A scene recall arrives as a Program Change; wait for it to settle before re-reading the mixer. */
 const SCENE_REFRESH_DEBOUNCE_MS = 300;
+/** Long enough for a throttled run of writes (a dragged value) to finish before the re-read. */
+const WRITE_REFRESH_DEBOUNCE_MS = 600;
 
 /** Sound pads on both the L6 and the L6max. */
 const PAD_COUNT = 4;
@@ -430,7 +432,9 @@ async function flush(id: ParamId, value: number, verify: boolean): Promise<void>
   status[id] = 'writing';
   try {
     if (!(await ensureOpen())) throw new Error(linkUnavailableMessage());
-    await editorSession.setValue(id, value, { force: showExperimental.value });
+    // The snapshot's layout says which mixer is answering; until one is read, the app's mixer type.
+    const model = mixerState.layout ?? (mixerType.value as ZoomModel);
+    await editorSession.setValue(id, value, { force: showExperimental.value, model });
 
     if (verify) {
       const actual = await editorSession.getValue(id);
@@ -443,6 +447,9 @@ async function flush(id: ParamId, value: number, verify: boolean): Promise<void>
     }
     status[id] = 'ok';
     errors[id] = null;
+    // An ack does not prove the write took effect (an L6max on fw 1.10 acks everything with 00 00):
+    // re-read the snapshot shortly after, so the UI ends up showing what the mixer reports.
+    scheduleWriteRefresh();
   } catch (e) {
     const previous = deviceValues[id];
     withRemote(() => {
@@ -577,6 +584,16 @@ async function refreshState(): Promise<void> {
     if (e instanceof SessionClosedError) return;
     linkError.value = errorText(e);
   }
+}
+
+/** After a write: one re-read once a burst of writes settles (see `flush`). */
+let writeRefreshTimer: ReturnType<typeof setTimeout> | undefined;
+function scheduleWriteRefresh(): void {
+  if (writeRefreshTimer !== undefined) clearTimeout(writeRefreshTimer);
+  writeRefreshTimer = setTimeout(() => {
+    writeRefreshTimer = undefined;
+    void refreshState();
+  }, WRITE_REFRESH_DEBOUNCE_MS);
 }
 
 /** Scene recall on the hardware (Program Change in): re-read once things settle. */

@@ -377,8 +377,39 @@ describe('ZoomL6EditorSession', () => {
       expect(await writeAndCapture('midiChannel', 16)).toEqual([0xf0, 0x52, 0x00, 0x00, 0x31, 0x0d, 0x0f, 0xf7]);
     });
 
-    it('mixerControlViaMidi on → 31 03 01', async () => {
+    it('mixerControlViaMidi on → 31 03 01 (L6, and the default when the model is unknown)', async () => {
       expect(await writeAndCapture('mixerControlViaMidi', 1)).toEqual([0xf0, 0x52, 0x00, 0x00, 0x31, 0x03, 0x01, 0xf7]);
+    });
+
+    it('mixerControlViaMidi on → 31 03 00 on an L6max (fw 1.10, captured from the official Editor)', async () => {
+      const { transport, session } = makeSession();
+      await openSession(transport, session);
+      transport.sent.length = 0;
+      const pending = session.setValue('mixerControlViaMidi', 1, { model: 'l6max' });
+      await vi.advanceTimersByTimeAsync(0);
+      expect(transport.commands.at(-1)).toEqual([0xf0, 0x52, 0x00, 0x00, 0x31, 0x03, 0x00, 0xf7]);
+      transport.receive(ack(0x03));
+      await expect(pending).resolves.toBeUndefined();
+    });
+
+    it('usbAudioMode Multi Track → 31 18 00 on an L6max (fw 1.10)', async () => {
+      const { transport, session } = makeSession();
+      await openSession(transport, session);
+      transport.sent.length = 0;
+      const pending = session.setValue('usbAudioMode', 1, { model: 'l6max' });
+      await vi.advanceTimersByTimeAsync(0);
+      expect(transport.commands.at(-1)).toEqual([0xf0, 0x52, 0x00, 0x00, 0x31, 0x18, 0x00, 0xf7]);
+      transport.receive(ack(0x18));
+      await expect(pending).resolves.toBeUndefined();
+    });
+
+    it('accepts the 00 00 ack an L6max on fw 1.10 sends for every session write', async () => {
+      const { transport, session } = makeSession();
+      await openSession(transport, session);
+      const pending = session.setValue('midiOutMode', 1);
+      await vi.advanceTimersByTimeAsync(0);
+      transport.receive(ack(0x00));
+      await expect(pending).resolves.toBeUndefined();
     });
 
     it('batteryType Lithium → 31 01 02', async () => {

@@ -117,10 +117,13 @@ describe('decodeSnapshot (L6max captures)', () => {
   });
 
   it('follows usbAudioMode across the maxE reconnects', () => {
-    const modes = loadCapture('maxE-')
-      .filter((m) => m.kind === 'editorOpenState')
-      .map((m) => (m.kind === 'editorOpenState' ? decodeSnapshot(m.payload).values.usbAudioMode : undefined));
-    expect(modes).toEqual([1, 1, 0, 1]);
+    const editorOpen = loadCapture('maxE-').filter((m) => m.kind === 'editorOpenState');
+    // The bytes of the original capture: 01, 01, 00, 01.
+    expect(editorOpen.map((m) => (m.kind === 'editorOpenState' ? m.payload[6] : undefined))).toEqual([1, 1, 0, 1]);
+    // Their meaning is the other way round on the L6max this fork was measured on (fw 1.10, see
+    // `invertedOn` in params.ts): the original labelled 01 Multi Track, the official Editor shows 00.
+    const modes = editorOpen.map((m) => (m.kind === 'editorOpenState' ? decodeSnapshot(m.payload).values.usbAudioMode : undefined));
+    expect(modes).toEqual([0, 0, 1, 0]);
   });
 
   it('does not emit the unverified pad and effect slots', () => {
@@ -224,5 +227,28 @@ describe('decodeSnapshot (live L6 probe)', () => {
     expect(at('pad1=NotMapped')['pad1.note']).toBe(128);
     expect(at('pad4=F3(65)')['pad4.note']).toBe(65);
     expect(at('pad1=C3(60)')['pad1.note']).toBe(60);
+  });
+});
+
+// ── L6max fw 1.10, read on 2026-11-21 against the official Editor ──────────────────────────────
+import fw110 from './fixtures/l6max-fw110-snapshots.json';
+
+const fw110Payload = (hex: string) => hex.split(/\s+/).map((h) => parseInt(h, 16)).slice(5, -1);
+
+describe('decodeSnapshot (L6max fw 1.10)', () => {
+  it('reads byte 6 = 00 as Multi Track, which is what the official Editor showed', () => {
+    const payload = fw110Payload(fw110.multitrack);
+    expect(payload[6]).toBe(0x00);
+    expect(decodeSnapshot(payload).values.usbAudioMode).toBe(1); // 1 = 'Multi Track'
+  });
+
+  it('reads byte 6 = 01 as Stereo Mix after the Editor switched to it', () => {
+    const payload = fw110Payload(fw110.stereo);
+    expect(payload[6]).toBe(0x01);
+    expect(decodeSnapshot(payload).values.usbAudioMode).toBe(0); // 0 = 'Stereo mix'
+  });
+
+  it('does not surface Mixer Control via MIDI until its byte is verified on the L6max', () => {
+    expect(decodeSnapshot(fw110Payload(fw110.multitrack)).values.mixerControlViaMidi).toBeUndefined();
   });
 });

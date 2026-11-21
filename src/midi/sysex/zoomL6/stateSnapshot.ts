@@ -20,7 +20,7 @@
  *           points 115-126 were located with a live probe: __tests__/fixtures/probe-l6-snapshot-diff.jsonl.)
  * - L6max : 1-5 and 7-12 (header), 21-27, 126-129, 152-175 (AUX channels 1-8 likely).
  */
-import { decode7bitLE } from './codec';
+import { decode7bitLE, invertsOn } from './codec';
 import { getParam, type ParamId } from './params';
 
 export type SnapshotLayoutId = 'l6' | 'l6max';
@@ -133,7 +133,17 @@ const L6MAX_SLOTS: SnapshotSlot[] = [
     6,
     1,
     true,
-    'captures/maxE-usb-audio-mode: snapshot byte 6 follows 31 18 00 (Stereo mix) / 31 18 01 (Multi Track): 01 -> 00 -> 01',
+    'captures/maxE-usb-audio-mode: snapshot byte 6 follows 31 18 00 (Stereo mix) / 31 18 01 (Multi Track): 01 -> 00 -> 01. '
+      + 'On L6max fw 1.10 the byte reads 00 with Multi Track and 01 with Stereo Mix (2026-11-21, against the official Editor), '
+      + 'so the param is marked invertedOn l6max',
+  ),
+  slot(
+    'mixerControlViaMidi',
+    4,
+    1,
+    false,
+    'unverified on the L6max: byte 4 read 00 in the morning and 01 after the app wrote 31 03 01 (= OFF on fw 1.10), '
+      + 'and the official Editor showed OFF whenever it read 01. No snapshot was taken with the setting known to be ON (2026-11-21)',
   ),
   ...padSlots(
     { mode: 13, level: 17, note: 122 },
@@ -221,7 +231,9 @@ export function decodeSnapshot(payload: readonly number[]): DecodedSnapshot {
       continue;
     }
     const raw = decode7bitLE(payload.slice(s.offset, s.offset + s.width));
-    const value = raw - (def.deviceOffset ?? 0);
+    const offsetValue = raw - (def.deviceOffset ?? 0);
+    // Some L6max bytes run the other way round (see `ParamDef.invertedOn`).
+    const value = invertsOn(def, layout.id) ? 1 - offsetValue : offsetValue;
     const inRange = value >= def.range.min && value <= def.range.max;
     const special = def.specialValues != null && Object.prototype.hasOwnProperty.call(def.specialValues, value);
     if (inRange || special) values[s.paramId] = value;

@@ -35,7 +35,7 @@ import {
   type ZoomL6Message,
   type ZoomL6MessageKind,
 } from './parse';
-import { getParam as getParamDef, type ParamDef, type ParamId } from './params';
+import { getParam as getParamDef, type ParamDef, type ParamId, type ZoomModel } from './params';
 import { decodeParamValue, encodeParamValue } from './codec';
 import { bytesToHex } from './hex';
 import { decodePadAssigned, decodePadFileName, type PadFileInfo } from './stateSnapshot';
@@ -443,7 +443,7 @@ export class ZoomL6EditorSession {
    * Refuses entries whose address is still a reverse-engineering placeholder (`verified: false`)
    * unless `force` is passed — the SysEx explorer is the only caller that should force.
    */
-  async setValue(id: ParamId, value: number, opts: { force?: boolean } = {}): Promise<void> {
+  async setValue(id: ParamId, value: number, opts: { force?: boolean; model?: ZoomModel | null } = {}): Promise<void> {
     const def = getParamDef(id);
     if (def.readOnly) {
       throw new Error(`Parameter "${id}" is read-only`);
@@ -457,13 +457,15 @@ export class ZoomL6EditorSession {
       throw new Error(`Parameter "${id}" is derived from the identity reply and cannot be written`);
     }
     // `encodeParamValue` clamps to `def.range` and applies `def.deviceOffset`.
-    const values = encodeParamValue(def, value);
+    const values = encodeParamValue(def, value, opts.model);
     if (def.address.scheme === 'session') {
       const { id: cmdId, prefix = [] } = def.address;
-      // The device acks a session write with `00 <id>` echoing the command id.
+      // The L6 acks a session write with `00 <id>` echoing the command id. An L6max on firmware 1.10
+      // acks every session write with `00 00`, applied or not (2026-11-21): accept both, and let
+      // the caller re-read the snapshot, because the ack does not prove the write took effect.
       await this.request(
         buildSessionCmd(cmdId, ...prefix, ...values),
-        (m) => m.kind === 'genericAck' && m.code === cmdId,
+        (m) => m.kind === 'genericAck' && (m.code === cmdId || m.code === 0x00),
       );
       return;
     }

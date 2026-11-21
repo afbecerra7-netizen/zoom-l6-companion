@@ -57,6 +57,13 @@ export interface ParamDef {
   range: ParamRange;
   /** Added to the UI value before encoding (e.g. MIDI channel 1..16 stored as 0..15 → -1). */
   deviceOffset?: number;
+  /**
+   * Models whose device byte is inverted for this two-valued param (`0` ↔ `1`), applied on write
+   * and when reading the snapshot. Measured on an L6max running firmware 1.10 against the official
+   * ZOOM L6 Editor 2.0.0.39: it writes Mixer Control via MIDI ON as `31 03 00` and Audio I/F Mode
+   * Multi Track as snapshot byte 6 = `00`, the opposite of the captures this registry started from.
+   */
+  invertedOn?: readonly ZoomModel[];
   /** Labels for out-of-range sentinel values (e.g. 128 = "Not Mapped"). */
   specialValues?: Readonly<Record<number, string>>;
   /** Discrete choices for a numeric param; the UI renders them as a dropdown instead of a number box. */
@@ -170,7 +177,10 @@ const entries: ParamDef[] = [
     range: { min: 0, max: 1, step: 1 },
     models: BOTH,
     verified: true,
-    evidence: 'captures/03-mixer-control-via-midi.txt: 31 03 00 (off) / 31 03 01 (on), ack 00 03',
+    evidence: 'captures/03-mixer-control-via-midi.txt: 31 03 00 (off) / 31 03 01 (on), ack 00 03. '
+      + 'L6max fw 1.10 (2026-11-21): the official Editor sends 31 03 00 for ON and 31 03 01 for OFF '
+      + '(MIDI Monitor spy on the Editor port), and the mixer acks every write with 00 00',
+    invertedOn: ['l6max'],
     description: 'Allow devices on the MIDI IN/OUT jacks to control the mixer.',
   }),
   def({
@@ -217,7 +227,7 @@ const entries: ParamDef[] = [
   def({ id: 'monitorPoint', label: 'Monitor Point', category: 'monitor', address: session(0x19), encoding: enumEnc(OUTPUT_POINTS), range: enumRange(OUTPUT_POINTS), models: L6MAX, verified: true, evidence: 'captures/maxB-monitor-point.txt: 31 19 00/01/02 (Pre/Pre+Comp/Post), ack 00 19' }),
   def({ id: 'subOutPoint', label: 'Sub-Out Point', category: 'monitor', address: session(0x1a), encoding: enumEnc(OUTPUT_POINTS), range: enumRange(OUTPUT_POINTS), models: L6MAX, verified: true, evidence: 'captures/maxC-subout-point.txt: 31 1A 00/01/02 (Pre/Pre+Comp/Post), ack 00 1A' }),
   def({ id: 'usbMixMinus', label: 'USB Mix Minus', category: 'monitor', address: session(0x15), encoding: { kind: 'bool' }, range: { min: 0, max: 1, step: 1 }, models: L6MAX, verified: true, evidence: 'captures/maxD-usb-mix-minus.txt: 31 15 00 (Off) / 31 15 01 (On), ack 00 15' }),
-  def({ id: 'usbAudioMode', label: 'USB Audio Mode', category: 'monitor', address: session(0x18), encoding: enumEnc(USB_AUDIO_MODES), range: enumRange(USB_AUDIO_MODES), models: L6MAX, verified: true, evidence: 'captures/maxE-usb-audio-mode.txt: 31 18 00 (Stereo mix) / 31 18 01 (Multi Track), ack 00 18' }),
+  def({ id: 'usbAudioMode', label: 'USB Audio Mode', category: 'monitor', address: session(0x18), encoding: enumEnc(USB_AUDIO_MODES), range: enumRange(USB_AUDIO_MODES), models: L6MAX, verified: true, invertedOn: ['l6max'], evidence: 'captures/maxE-usb-audio-mode.txt: 31 18 00 (Stereo mix) / 31 18 01 (Multi Track), ack 00 18. L6max fw 1.10 (2026-11-21), against the official Editor: snapshot byte 6 = 00 with Multi Track and 01 with Stereo Mix, both ways' }),
 
   // ── Read-only info ──────────────────────────────────────────────────────
   def({
