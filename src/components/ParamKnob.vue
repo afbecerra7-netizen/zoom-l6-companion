@@ -1,5 +1,5 @@
 <template>
-  <div class="param-knob" :class="{ disabled: !isInteractive }">
+  <div class="param-knob" :class="{ disabled: !isInteractive, desconocido: !known }">
     <div
       ref="knobEl"
       class="perilla-zona"
@@ -35,8 +35,9 @@
 </template>
 
 <script setup lang="ts">
+import { useSceneKnowledge } from '../composables/useSceneKnowledge';
 import { t, paramLabel, paramDescription, translatedText, errorMessage } from '../i18n';
-import { computed, onUnmounted, ref } from 'vue';
+import { computed, onUnmounted, ref, watch } from 'vue';
 import { getParam, type ParamId } from '../midi/sysex/zoomL6/params';
 import { useDeviceSettings } from '../composables/useDeviceSettings';
 
@@ -55,6 +56,7 @@ const props = withDefaults(defineProps<Props>(), {
 });
 
 const deviceSettings = useDeviceSettings();
+const { known, markKnown, revision } = useSceneKnowledge(() => props.paramId);
 const def = computed(() => getParam(props.paramId));
 
 const rawValue = computed<number | undefined>(() => deviceSettings.values[props.paramId]);
@@ -68,6 +70,7 @@ const midpoint = computed(() => {
 
 /** The value driving rotation/readout: modulated override > device value > midpoint (for display). */
 const displayNumber = computed<number | undefined>(() => {
+  if (!known.value) return undefined;
   if (props.modulatedValue !== undefined) return props.modulatedValue;
   return rawValue.value;
 });
@@ -80,9 +83,10 @@ const isLoading = computed(() => rawValue.value === undefined || status.value ==
 const isInteractive = computed(() => !props.disabled && deviceSettings.isWritable(props.paramId));
 
 const displayText = computed(() => {
-  if (isLoading.value && props.modulatedValue === undefined) return '--';
+  if (!known.value) return '—';
+  if (isLoading.value && props.modulatedValue === undefined) return '—';
   const value = displayNumber.value;
-  if (value === undefined) return '--';
+  if (value === undefined) return '—';
   const special = def.value.specialValues?.[value];
   if (special) return translatedText(special);
   const rounded = Math.round(value);
@@ -97,7 +101,7 @@ const knobRotation = computed(() => {
   return normalized * 270 - 135; // -135 to +135 degrees
 });
 
-const statusDotVisible = computed(() => status.value === 'reading' || status.value === 'writing' || status.value === 'error');
+const statusDotVisible = computed(() => known.value && (status.value === 'reading' || status.value === 'writing' || status.value === 'error'));
 const statusDotClass = computed(() => ({
   reading: status.value === 'reading',
   writing: status.value === 'writing',
@@ -118,6 +122,7 @@ function clamp(value: number): number {
 function commit(value: number): void {
   const snapped = clamp(snapToStep(value, def.value.range.step));
   deviceSettings.set(props.paramId, snapped);
+  markKnown();
 }
 
 // ── drag ──────────────────────────────────────────────────────────────────────
@@ -136,7 +141,7 @@ function startDrag(event: PointerEvent): void {
   if (!isInteractive.value) return;
   isDragging.value = true;
   dragStartY = event.clientY;
-  dragStartValue = rawValue.value ?? midpoint.value;
+  dragStartValue = displayNumber.value ?? midpoint.value;
   knobEl.value?.setPointerCapture(event.pointerId);
   knobEl.value?.focus();
   event.preventDefault();
@@ -172,14 +177,14 @@ function onWheel(event: WheelEvent): void {
   if (!isInteractive.value) return;
   const step = def.value.range.step ?? 1;
   const amount = (event.shiftKey ? step * 10 : step) * (event.deltaY > 0 ? -1 : 1);
-  commit((rawValue.value ?? midpoint.value) + amount);
+  commit((displayNumber.value ?? midpoint.value) + amount);
 }
 
 // ── keyboard ─────────────────────────────────────────────────────────────────────
 function onKeydown(event: KeyboardEvent): void {
   if (!isInteractive.value) return;
   const step = def.value.range.step ?? 1;
-  const base = rawValue.value ?? midpoint.value;
+  const base = displayNumber.value ?? midpoint.value;
   switch (event.key) {
     case 'ArrowUp':
     case 'ArrowRight':
@@ -203,6 +208,8 @@ function onKeydown(event: KeyboardEvent): void {
       break;
   }
 }
+
+watch(revision, () => { isDragging.value = false; }, { flush: 'sync' });
 
 onUnmounted(() => {
   isDragging.value = false;

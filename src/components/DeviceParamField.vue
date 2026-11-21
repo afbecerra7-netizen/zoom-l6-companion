@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { isSceneParam, useSceneKnowledge } from '../composables/useSceneKnowledge';
 import { t, paramLabel, paramDescription, translatedText, errorMessage } from '../i18n';
 import { computed, ref, watch } from 'vue';
 import { getParam } from '../midi/sysex/zoomL6/params';
@@ -28,12 +29,14 @@ const emit = defineEmits<{
 }>();
 
 const deviceSettings = useDeviceSettings();
+const { known, markKnown } = useSceneKnowledge(() => props.paramId);
+const sceneUnknown = computed(() => isSceneParam(props.paramId) && !known.value);
 const def = computed(() => getParam(props.paramId));
 
 const displayLabel = computed(() => props.label ?? paramLabel(props.paramId));
 const controlled = computed(() => props.modelValue !== undefined);
 const value = computed<number | undefined>(() =>
-  controlled.value ? props.modelValue : deviceSettings.values[props.paramId],
+  sceneUnknown.value ? undefined : controlled.value ? props.modelValue : deviceSettings.values[props.paramId],
 );
 const paramStatus = computed(() => deviceSettings.status[props.paramId] ?? 'idle');
 const errorText = computed(() => deviceSettings.errors[props.paramId] ? errorMessage(deviceSettings.errors[props.paramId]) : null);
@@ -46,6 +49,7 @@ const disabled = computed(
 
 /** Writes the mixer, or hands the value to the parent in controlled mode. */
 function commit(next: number): void {
+  markKnown();
   if (controlled.value) {
     emit('update:modelValue', next);
   } else {
@@ -121,7 +125,7 @@ const showNumberInput = computed(() => !hasSpecialValues.value || specialSelectV
 </script>
 
 <template>
-  <div class="device-param-field" :class="{ 'device-param-field--disabled': disabled }">
+  <div class="device-param-field" :class="{ 'device-param-field--disabled': disabled, desconocido: sceneUnknown }">
     <div class="device-param-field__label-row">
       <i
         class="lampara status-dot"
@@ -129,7 +133,7 @@ const showNumberInput = computed(() => !hasSpecialValues.value || specialSelectV
           blanco: paramStatus === 'idle',
           verde: paramStatus === 'ok',
           rojo: paramStatus === 'error',
-          on: paramStatus !== 'idle',
+          on: !sceneUnknown && paramStatus !== 'idle',
           'status-dot--busy': paramStatus === 'reading' || paramStatus === 'writing',
         }"
         :title="statusTitle"
@@ -153,9 +157,10 @@ const showNumberInput = computed(() => !hasSpecialValues.value || specialSelectV
         v-else-if="def.encoding.kind === 'enum'"
         class="setting-select device-param-field__select"
         :disabled="disabled"
-        :value="value ?? 0"
+        :value="value ?? ''"
         @change="onEnumChange"
       >
+        <option v-if="value === undefined" disabled value="">—</option>
         <option v-for="(optLabel, idx) in def.encoding.labels" :key="idx" :value="idx">
           {{ translatedText(optLabel) }}
         </option>
@@ -172,7 +177,7 @@ const showNumberInput = computed(() => !hasSpecialValues.value || specialSelectV
         @click="toggleBool"
       >
         <i class="lampara blanco" aria-hidden="true"></i>
-        <span class="toggle-state">{{ translatedText(value === 1 ? 'ON' : 'OFF') }}</span>
+        <span class="toggle-state">{{ value === undefined ? '—' : translatedText(value === 1 ? 'ON' : 'OFF') }}</span>
       </button>
 
       <!-- numeric with discrete choices (e.g. MIDI channel 1-16) -->
@@ -205,6 +210,7 @@ const showNumberInput = computed(() => !hasSpecialValues.value || specialSelectV
         <input
           v-if="showNumberInput"
           type="number"
+          placeholder="—"
           class="cc-input device-param-field__number"
           :disabled="disabled"
           :min="def.range.min"

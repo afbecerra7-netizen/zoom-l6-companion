@@ -1,7 +1,7 @@
 <template>
   <article
     class="tira"
-    :class="{ estereo, muda: values.mute > 63 }"
+    :class="{ estereo, muda: muteKnown && values.mute > 63 }"
     :aria-label="t('channel', { n: channelData.channel })"
     @keydown.esc="cierraMenu"
   >
@@ -101,6 +101,7 @@
 </template>
 
 <script setup lang="ts">
+import { ccKnowledgeKey, useSceneKnowledge } from '../composables/useSceneKnowledge';
 import { t } from '../i18n';
 import { reactive, ref, computed } from 'vue';
 import MidiControl from './MidiControl.vue';
@@ -123,6 +124,8 @@ const props = withDefaults(defineProps<Props>(), {
   mixerType: 'l6'
 });
 const emit = defineEmits<Emits>();
+
+const { known: muteKnown } = useSceneKnowledge(() => ccKnowledgeKey(props.channelData.controls.mute));
 
 // L6max: canales 1–4 mono y 5–8 estéreo. L6: 1–2 mono y 3–6 estéreo.
 const estereo = computed(() => props.channelData.channel >= (props.mixerType === 'l6max' ? 5 : 3));

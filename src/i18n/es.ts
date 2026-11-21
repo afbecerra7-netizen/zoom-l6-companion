@@ -350,6 +350,7 @@ export default {
   'tapeColor': 'Color de cinta {n}',
   'tapePlaceholder': 'PEGAR CINTA',
   'lfoFor': 'LFO de {label}',
+  'sceneRecalled': 'Escena {id} recuperada. La mezcladora no informa sus valores: la consola los muestra cuando los muevas.',
   'sceneTitle': 'Escena {id} · Program Change {program}',
   'diagnosticTitle': 'Diagnóstico: {errors} errores, {messages} mensajes MIDI',
   'layout': 'Formato {name} ({byte}), {count} bytes',

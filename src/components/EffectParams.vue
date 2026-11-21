@@ -1,6 +1,7 @@
 <template>
   <div v-if="shouldRender" class="effect-params" :class="{ compact }">
-    <ParamKnob v-for="id in visibleIds" :key="id" :paramId="id" :compact="compact" />
+    <span v-if="!selectionKnown" class="valor-desconocido">—</span>
+    <ParamKnob v-show="selectionKnown" v-for="id in visibleIds" :key="id" :paramId="id" :compact="compact" />
     <DeviceNotice v-if="firstError" variant="error" subtle :text="firstError ?? ''" />
   </div>
 </template>
@@ -21,6 +22,7 @@ interface EfxOption {
 interface Props {
   /** Current CC value of the selected internal effect (`GlobalControls.values.efxType`). */
   efxType: number;
+  selectionKnown?: boolean;
   efxOptions: EfxOption[];
   mixerType: 'l6' | 'l6max';
   compact?: boolean;
@@ -28,6 +30,7 @@ interface Props {
 
 const props = withDefaults(defineProps<Props>(), {
   compact: false,
+  selectionKnown: true,
 });
 
 const deviceSettings = useDeviceSettings();

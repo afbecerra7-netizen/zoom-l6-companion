@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useSceneKnowledge } from './composables/useSceneKnowledge';
 import { t, type TranslationKey } from './i18n';
 import { connectionStatus } from './i18n/connectionStatus';
 import { ref, reactive, onMounted, onUnmounted, computed, nextTick, watch } from 'vue';
@@ -17,6 +18,16 @@ import { applyMixerCcMap } from './config/ccMapping';
 import { midiService } from './services/midiService';
 import { useDeviceSettings } from './composables/useDeviceSettings';
 import type { ParamId } from './midi/sysex/zoomL6/params';
+
+const { scene: recalledScene, revision: sceneRevision } = useSceneKnowledge('notice');
+const showSceneNotice = ref(false);
+let sceneNoticeTimer: ReturnType<typeof setTimeout> | undefined;
+watch(sceneRevision, () => {
+  showSceneNotice.value = true;
+  if (sceneNoticeTimer !== undefined) clearTimeout(sceneNoticeTimer);
+  sceneNoticeTimer = setTimeout(() => { showSceneNotice.value = false; }, 9000);
+});
+onUnmounted(() => { if (sceneNoticeTimer !== undefined) clearTimeout(sceneNoticeTimer); });
 
 // Platform detection
 function detectPlatform() {
@@ -166,7 +177,6 @@ function onGlobalControlChange(section: string, control: string, value: number) 
 
 function onSceneChanged(scene: any) {
   console.log(`Scene changed to: ${scene.name} (Program ${scene.program})`);
-  // Additional scene change handling can be added here if needed
 }
 
 function resetAllChannels() {
@@ -299,7 +309,7 @@ function handleAdvancedSettingsSave(data: { channelControls: ChannelControls[], 
 
 // ── Adopt the mixer's shared settings (MIDI channel, pad notes, CC# map) ─────────────────
 // The mixer's values win: whenever a state snapshot is read (link open, Device Settings opened,
-// scene recall), anything that differs from this app's config is copied in and saved.
+// explicit re-read), anything that differs from this app's config is copied in and saved.
 const mixerNotice = ref<(() => string) | null>(null);
 let mixerNoticeTimer: ReturnType<typeof window.setTimeout> | undefined;
 const MIXER_NOTICE_MS = 4000;
@@ -467,6 +477,7 @@ onUnmounted(() => {
     <!-- La consola ocupa la ventana entera; si la ventana es menor que el lienzo base se encoge
          completa (assets/tape101.css). Nunca hay scroll. -->
     <div class="consola-escala" :style="{ '--canales': channelControls.length }">
+      <div v-if="showSceneNotice" class="aviso-escena" role="status">{{ t('sceneRecalled', { id: recalledScene ?? '' }) }}</div>
       <header class="barra">
         <div class="placa-nombre">
           <b>{{ t('fixed.ZOOM') }} {{ mixerType === 'l6max' ? 'L6max' : 'L6' }}</b>

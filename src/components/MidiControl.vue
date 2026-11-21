@@ -1,5 +1,5 @@
 <template>
-  <div class="midi-control" :class="[`control-${clase}`, { active: isActive }]">
+  <div class="midi-control" :class="[`control-${clase}`, { active: isActive, desconocido: !known }]">
     <!-- Fader -->
     <template v-if="clase === 'fader'">
       <div class="fader">
@@ -13,13 +13,13 @@
           :aria-label="etiqueta"
           :aria-valuemin="control.min"
           :aria-valuemax="control.max"
-          :aria-valuenow="Math.round(currentValue)"
+          :aria-valuenow="known ? Math.round(currentValue) : undefined"
           :aria-valuetext="displayValue"
           @pointerdown="startDrag"
           @dblclick.prevent="resetToDefault"
           @keydown="onKeydown"
         >
-          <div class="fader-tapa" :style="{ top: alturaFader(currentValue) }"></div>
+          <div class="fader-tapa" :style="{ top: alturaFader(visualValue) }"></div>
         </div>
         <button
           v-if="lfoVisible"
@@ -42,7 +42,7 @@
         :aria-label="etiqueta"
         :aria-valuemin="control.min"
         :aria-valuemax="control.max"
-        :aria-valuenow="Math.round(currentValue)"
+        :aria-valuenow="known ? Math.round(currentValue) : undefined"
         :aria-valuetext="displayValue"
         @pointerdown="startDrag"
         @dblclick.prevent="resetToDefault"
@@ -69,11 +69,11 @@
       v-else-if="clase === 'toggle'"
       type="button"
       class="tecla"
-      :class="[forma ? `tecla-${forma}` : '', { on: currentValue > 63 }]"
-      :aria-pressed="currentValue > 63"
+      :class="[forma ? `tecla-${forma}` : '', { on: known && currentValue > 63 }]"
+      :aria-pressed="known ? currentValue > 63 : undefined"
       @click="toggleValue"
     >
-      <i class="lampara" :class="tono"></i>{{ etiqueta }}
+      <i class="lampara" :class="tono"></i>{{ etiqueta }}<span v-if="!known" class="valor-desconocido">—</span>
     </button>
 
     <!-- Tecla momentánea -->
@@ -104,6 +104,8 @@
       </button>
     </div>
 
+    <span v-if="!known && clase === 'radio'" class="valor-desconocido">—</span>
+
     <!-- Diálogo del LFO: fuera de la consola, para que no se encoja con ella -->
     <Teleport to="body">
       <div v-if="showPopover" class="lfo-overlay" @click="closePopover">
@@ -120,6 +122,7 @@
 </template>
 
 <script setup lang="ts">
+import { ccKnowledgeKey, useSceneKnowledge } from '../composables/useSceneKnowledge';
 import { t, translatedText } from '../i18n';
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import type { MIDIControl } from '../config/midiConfig';
@@ -162,6 +165,10 @@ const props = withDefaults(defineProps<Props>(), {
 
 const emit = defineEmits<Emits>();
 
+const { known, markKnown, revision } = useSceneKnowledge(() => ccKnowledgeKey(props.control));
+const midpoint = computed(() => Math.round((props.control.min + props.control.max) / 2));
+const visualValue = computed(() => known.value ? currentValue.value : midpoint.value);
+
 const currentValue = ref(props.modelValue ?? props.control.defaultValue);
 const isActive = ref(false);
 const isDragging = ref(false);
@@ -174,6 +181,7 @@ const etiqueta = computed(() => props.rotulo ?? translatedText(props.control.nam
 const bipolar = computed(() => esBipolar(props.unidad));
 
 const displayValue = computed(() => {
+  if (!known.value) return '—';
   if (props.control.type === 'toggle') {
     return translatedText(currentValue.value > 63 ? 'ON' : 'OFF');
   }
@@ -190,6 +198,7 @@ function alturaFader(valor: number): string {
 // El mezclador puede mandar cualquier CC dentro del tramo de una opción, no solo su valor
 // exacto: la opción encendida es la de mayor valor que no pasa del actual.
 const opcionActiva = computed<number | null>(() => {
+  if (!known.value) return null;
   const opciones = props.control.options ?? [];
   if (opciones.length === 0) return null;
   const candidatas = opciones.filter((o) => o.value <= currentValue.value);
@@ -204,8 +213,9 @@ const opcionActiva = computed<number | null>(() => {
 const lfoVisible = computed(() => ui.modulacion || lfo.value.state !== 'disabled');
 
 const knobRotation = computed(() => {
+  if (!known.value) return 0;
   const range = props.control.max - props.control.min;
-  const normalized = (currentValue.value - props.control.min) / range;
+  const normalized = (visualValue.value - props.control.min) / range;
   return (normalized * 270) - 135; // -135 to +135 degrees
 });
 
@@ -296,6 +306,14 @@ watch(() => lfo.value.state, (state) => {
   }
 });
 
+// A scene must not let an old gesture or oscillator overwrite the recalled mix.
+watch(revision, () => {
+  stopDrag();
+  pauseLfo();
+  stopLfo();
+  isActive.value = false;
+}, { flush: 'sync' });
+
 // Methods
 function handleInput(event: Event) {
   const target = event.target as HTMLInputElement;
@@ -312,6 +330,7 @@ function updateValue(value: number, fromMidi = false) {
   // Only send MIDI CC if the update is NOT from MIDI input (to avoid feedback loop)
   if (!fromMidi) {
     midiService.sendControlChange(props.control, clampedValue);
+    markKnown();
   }
   
   // Visual feedback
@@ -320,7 +339,7 @@ function updateValue(value: number, fromMidi = false) {
 }
 
 function toggleValue() {
-  const newValue = currentValue.value > 63 ? 0 : 127;
+  const newValue = known.value && currentValue.value > 63 ? 0 : 127;
   updateValue(newValue);
 }
 
@@ -344,7 +363,7 @@ function startDrag(event: PointerEvent) {
   if (event.button !== 0) return;
   isDragging.value = true;
   dragStartY.value = event.clientY;
-  dragStartValue.value = currentValue.value;
+  dragStartValue.value = visualValue.value;
   dragEl = event.currentTarget as HTMLElement;
   dragEl.setPointerCapture(event.pointerId);
   dragEl.addEventListener('pointermove', handleDrag);
@@ -359,7 +378,7 @@ function handleDrag(event: PointerEvent) {
   const deltaY = (dragStartY.value - event.clientY) / escalaConsola(); // hacia arriba sube
   const nuevo = Math.round(dragStartValue.value + (deltaY / recorrido) * rango * (event.shiftKey ? 0.2 : 1));
   const limitado = Math.max(props.control.min, Math.min(props.control.max, nuevo));
-  if (limitado !== currentValue.value) updateValue(limitado);
+  if (deltaY !== 0 && (!known.value || limitado !== currentValue.value)) updateValue(limitado);
 }
 
 function stopDrag() {
@@ -376,7 +395,7 @@ function onKeydown(event: KeyboardEvent) {
   const paso = pasos[event.key];
   if (paso === undefined) return;
   event.preventDefault();
-  updateValue(Math.round(currentValue.value) + paso);
+  updateValue(Math.round(visualValue.value) + paso);
 }
 
 // Reset to default (double-click / double-tap)
@@ -463,6 +482,7 @@ defineExpose({
 });
 
 onUnmounted(() => {
+  stopLfo();
   stopDrag();
   // Clean up MIDI listener
   if (midiListener) {

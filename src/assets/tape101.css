@@ -74,3 +74,10 @@ body {
 .boton-barra:disabled { cursor: default; opacity: 0.45; }
 
 .grupo { display: flex; flex-direction: column; gap: 9px; padding: 10px; border-radius: 8px; background: var(--placa); box-shadow: var(--relieve-1); }
+
+/* Un valor desconocido no equivale a cero ni a apagado. La raya conserva esa diferencia. */
+.desconocido .perilla-zona, .desconocido .fader-tapa { opacity: 0.3; }
+.desconocido .lampara { background: var(--inactivo); box-shadow: var(--hueco); }
+.desconocido .perilla-valor, .desconocido .fader-valor, .valor-desconocido { color: var(--inactivo); }
+.valor-desconocido { font: 500 11.5px/1 var(--f-datos); text-align: center; }
+.aviso-escena { pointer-events: none; position: fixed; z-index: 100; left: 50%; top: 58px; transform: translateX(-50%); max-width: 80vw; padding: 10px 14px; border-radius: 6px; background: var(--hundido); color: var(--serigrafia-2); box-shadow: var(--relieve-1); font: 400 14px/1.4 var(--f-texto); }

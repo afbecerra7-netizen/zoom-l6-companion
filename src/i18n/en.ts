@@ -351,6 +351,7 @@ export default {
   'tapeColor': 'Tape color {n}',
   'tapePlaceholder': 'ADD TAPE',
   'lfoFor': 'LFO for {label}',
+  'sceneRecalled': 'Scene {id} recalled. The mixer does not report its values: the console shows them when you adjust each control.',
   'sceneTitle': 'Scene {id} · Program Change {program}',
   'diagnosticTitle': 'Diagnostics: {errors} errors, {messages} MIDI messages',
   'layout': 'Layout {name} ({byte}), {count} bytes',

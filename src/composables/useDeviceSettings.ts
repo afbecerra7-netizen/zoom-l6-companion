@@ -22,6 +22,7 @@ import type { ParsedZoomL6Message } from '../midi/sysex/zoomL6/parse';
 import { SessionClosedError, type SessionInfo } from '../midi/sysex/zoomL6/editorSession';
 import { decodeSnapshot } from '../midi/sysex/zoomL6/stateSnapshot';
 import type { PadFileInfo, SnapshotLayoutId } from '../midi/sysex/zoomL6/stateSnapshot';
+import { isSceneParam, markKnownFromMixer } from './useSceneKnowledge';
 import type { MixerType } from '../config/midiConfig';
 
 export type ParamStatus = 'idle' | 'reading' | 'writing' | 'ok' | 'error';
@@ -139,6 +140,7 @@ const mixerState = reactive<MixerState>({
   readAt: null,
 });
 
+let sceneGeneration = 0;
 let refCount = 0;
 let openInFlight: Promise<boolean> | null = null;
 let remoteDepth = 0;
@@ -146,7 +148,6 @@ let remoteDepth = 0;
 let mixerStateSeq = 0;
 /** Pad-file read started by the latest snapshot; `refreshState` awaits it. */
 let mixerStateLoad: Promise<void> = Promise.resolve();
-let sceneRefreshTimer: ReturnType<typeof setTimeout> | undefined;
 /** `openedAt` of the session whose pad files were last read (pad files are read once per open). */
 let padFilesOpenedAt: number | null = null;
 
@@ -427,17 +428,21 @@ function throttleWrite(id: ParamId, value: number, verify: boolean): void {
 }
 
 async function flush(id: ParamId, value: number, verify: boolean): Promise<void> {
+  const generation = sceneGeneration;
   const def = entry(id);
   if (!def) return;
   status[id] = 'writing';
   try {
     if (!(await ensureOpen())) throw new Error(linkUnavailableMessage());
+    if (generation !== sceneGeneration) return;
     // The snapshot's layout says which mixer is answering; until one is read, the app's mixer type.
     const model = mixerState.layout ?? (mixerType.value as ZoomModel);
     await editorSession.setValue(id, value, { force: showExperimental.value, model });
 
+    if (generation !== sceneGeneration) return;
     if (verify) {
       const actual = await editorSession.getValue(id);
+      if (generation !== sceneGeneration) return;
       deviceValues[id] = actual;
       withRemote(() => {
         values[id] = actual;
@@ -451,6 +456,7 @@ async function flush(id: ParamId, value: number, verify: boolean): Promise<void>
     // re-read the snapshot shortly after, so the UI ends up showing what the mixer reports.
     scheduleWriteRefresh();
   } catch (e) {
+    if (generation !== sceneGeneration) return;
     const previous = deviceValues[id];
     withRemote(() => {
       values[id] = previous;
@@ -528,6 +534,8 @@ function applySnapshot(payload: readonly number[]): void {
       status[id] = 'ok';
       errors[id] = null;
       applied[id] = value;
+      // The mixer reported it: if a scene recall had made it unknown, it is known again.
+      if (isSceneParam(id)) markKnownFromMixer(id);
     }
   });
   mixerState.layout = decoded.layout;
@@ -559,7 +567,7 @@ watch(
     mixerStateSeq += 1;
     applySnapshot(info.editorState.payload);
     // Pad file assignments are global (not part of scenes), so read them once per session open
-    // rather than on every refresh (scene recall, Device Settings opened, explorer re-read).
+    // rather than on every refresh (Device Settings opened, explorer re-read).
     if (info.openedAt !== padFilesOpenedAt) {
       padFilesOpenedAt = info.openedAt;
       mixerStateLoad = loadPadFiles(mixerStateSeq);
@@ -596,22 +604,32 @@ function scheduleWriteRefresh(): void {
   }, WRITE_REFRESH_DEBOUNCE_MS);
 }
 
-/** Scene recall on the hardware (Program Change in): re-read once things settle. */
-function onProgramChange(): void {
+/**
+ * Scene recall: cancel pending writes (they belong to the mix before the recall), forget the values
+ * the scene changes, and re-read the snapshot once things settle. The re-read is a read on the
+ * editor port; whatever verified slot it brings back is shown again, the rest stays unknown.
+ */
+let sceneRefreshTimer: ReturnType<typeof setTimeout> | undefined;
+function invalidateSceneValues(): void {
+  sceneGeneration += 1;
+  if (writeRefreshTimer !== undefined) clearTimeout(writeRefreshTimer);
+  writeRefreshTimer = undefined;
   if (sceneRefreshTimer !== undefined) clearTimeout(sceneRefreshTimer);
   sceneRefreshTimer = setTimeout(() => {
     sceneRefreshTimer = undefined;
     void refreshState();
   }, SCENE_REFRESH_DEBOUNCE_MS);
-}
-
-/**
- * `addProgramChangeListener` needs a connected input and `removeAllListeners` (port change,
- * hot-plug) drops it, so this runs on every (re)connection. Re-adding is a no-op while it's held.
- */
-function registerProgramChangeListener(): void {
-  if (!midiService.midiInputConnected.value) return;
-  midiService.addProgramChangeListener(onProgramChange);
+  for (const slot of pending.values()) {
+    if (slot.timer !== undefined) clearTimeout(slot.timer);
+  }
+  pending.clear();
+  for (const id of Object.keys(values)) {
+    if (!isSceneParam(id)) continue;
+    values[id] = undefined;
+    deviceValues[id] = undefined;
+    status[id] = 'idle';
+    errors[id] = null;
+  }
 }
 
 // ── watches ───────────────────────────────────────────────────────────────────
@@ -632,7 +650,6 @@ watch(midiService.connectionState, (connected) => {
     clearValues();
     return;
   }
-  registerProgramChangeListener();
   // A disconnect/reconnect cycle (e.g. USB mass storage) clears a suspension.
   suspended.value = false;
   if (refCount > 0 && linkEnabled.value) {
@@ -641,16 +658,6 @@ watch(midiService.connectionState, (connected) => {
     })();
   }
 });
-
-// An input swap or hot-plug can `removeAllListeners` while `connectionState` stays true; `sync` so
-// the drop-and-reconnect inside one call (false → true) is still seen.
-watch(
-  midiService.midiInputConnected,
-  (inputConnected) => {
-    if (inputConnected) registerProgramChangeListener();
-  },
-  { flush: 'sync' },
-);
 
 watch([sysexReady, editorPortsReady], ([sysex, ports]) => {
   if (sysex && ports && refCount > 0 && linkEnabled.value && !suspended.value) {
@@ -683,7 +690,7 @@ export interface DeviceSettingsApi {
   refreshState: () => Promise<void>;
   /**
    * Call after the app itself recalls a scene (sends a Program Change): the mixer doesn't echo it,
-   * so this schedules the same debounced re-read an inbound Program Change triggers.
+   * so this cancels pending writes and re-reads the snapshot, just as an inbound Program Change does.
    */
   sceneChanged: () => void;
   set: (id: ParamId, value: number, opts?: SetOptions) => void;
@@ -714,7 +721,7 @@ const api: DeviceSettingsApi = {
   refresh,
   refreshAll,
   refreshState,
-  sceneChanged: onProgramChange,
+  sceneChanged: invalidateSceneValues,
   set,
   setNow,
   suspend,

@@ -11,6 +11,7 @@
       />
       <EffectParams
         :efxType="values.efxType"
+        :selectionKnown="effectKnown"
         :efxOptions="globalData.efxType.options ?? []"
         :mixerType="mixerType"
       />
@@ -30,6 +31,7 @@
 </template>
 
 <script setup lang="ts">
+import { ccKnowledgeKey, useSceneKnowledge } from '../composables/useSceneKnowledge';
 import { t } from '../i18n';
 import { reactive } from 'vue';
 import MidiControl from './MidiControl.vue';
@@ -52,6 +54,8 @@ const props = withDefaults(defineProps<Props>(), {
   compact: false
 });
 const emit = defineEmits<Emits>();
+
+const { known: effectKnown } = useSceneKnowledge(() => ccKnowledgeKey(props.globalData.efxType));
 
 // Reactive values for simplified global controls
 const values = reactive({

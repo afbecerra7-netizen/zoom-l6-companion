@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { t } from '../i18n';
-import { ref, onMounted, onUnmounted, computed } from 'vue';
+import { ref, onMounted, onUnmounted, computed, watch } from 'vue';
 import { midiService } from '../services/midiService';
 import { useDeviceSettings } from '../composables/useDeviceSettings';
+import { recallScene } from '../composables/useSceneKnowledge';
 import { sceneControls, type SceneControl } from '../config/midiConfig';
 import { sceneControlsL6Max } from '../config/midiConfigL6Max';
 
@@ -40,9 +41,8 @@ function selectScene(scene: SceneControl) {
   try {
     // Send Program Change message
     midiService.sendProgramChange(scene.program, scene.channel);
-    // The recalled scene changes effect parameters and other mixer settings, and the mixer doesn't
-    // echo the Program Change back, so ask for a (debounced) re-read of its state.
     deviceSettings.sceneChanged();
+    recallScene(scene.id);
     
     // Update current scene
     currentScene.value = scene;
@@ -61,6 +61,8 @@ function handleProgramChange(program: number, channel: number) {
   // Find the scene that matches this program change
   const scene = activeSceneControls.value.find(s => s.program === program && s.channel === channel);
   if (scene) {
+    deviceSettings.sceneChanged();
+    recallScene(scene.id);
     currentScene.value = scene;
     emit('sceneChanged', scene);
     console.log(`Scene received: ${scene.name} (Program ${program})`);
@@ -71,6 +73,12 @@ function handleProgramChange(program: number, channel: number) {
 function updateConnectionState() {
   isConnected.value = midiService.isConnected;
 }
+
+// Port changes drop service listeners; register again even if the component stays mounted.
+watch(midiService.midiInputConnected, (connected) => {
+  if (connected) midiService.addProgramChangeListener(handleProgramChange);
+}, { flush: 'sync' });
+watch(midiService.connectionState, updateConnectionState);
 
 // Lifecycle
 onMounted(() => {
