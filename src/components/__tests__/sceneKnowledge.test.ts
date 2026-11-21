@@ -222,7 +222,7 @@ describe('scene knowledge in the console', () => {
     expect(editorSession.refreshState).toHaveBeenCalledTimes(1);
   });
 
-  it('pauses an active LFO on recall and does not restore knowledge from an old model value or incoming CC', async () => {
+  it('pauses an active LFO on recall; an old model value does not restore knowledge, a CC from the mixer does', async () => {
     const control = channelControlsL6Max[0]!.controls.pan;
     const value = ref(10);
     const controlRef = ref<{ lfo: { state: string } }>();
@@ -232,11 +232,16 @@ describe('scene knowledge in the console', () => {
     recallScene('D');
     await settle();
     expect(controlRef.value!.lfo.state).toBe('paused');
-    fakeInput.receiveCC(control.cc, 90, control.channel);
     value.value = 91;
     await settle();
     expect(cls(root, 'perilla-valor')[0]!.text).toBe('—');
+    // The mixer reporting its value is knowledge: shown, and nothing echoed back.
+    fakeInput.receiveCC(control.cc, 90, control.channel);
+    await settle();
+    expect(cls(root, 'perilla-valor')[0]!.text).not.toBe('—');
     expect(midiService.sendControlChange).not.toHaveBeenCalled();
+    recallScene('D');
+    await settle();
     pressKey(all(root, el => el.props.role === 'slider')[0]!);
     await settle();
     expect(cls(root, 'perilla-valor')[0]!.text).toBe('65');

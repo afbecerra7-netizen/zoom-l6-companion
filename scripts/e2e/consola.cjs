@@ -32,14 +32,18 @@ app.whenReady().then(async () => {
     t1.querySelector('.tecla-mute').click()
     tecla(t1.querySelector('.fader-pista'), 'PageDown')
     ;[...document.querySelectorAll('.selector .tecla')].find((b) => /room/i.test(b.textContent)).click()
+    await new Promise((r) => setTimeout(r, 200))
+    // Lo que la app sabe antes de la escena: después de recuperarla, la consola no lo inventa.
+    const previo = { high: high.getAttribute('aria-valuetext'), mute1: t1.classList.contains('muda'), lamparaMute: getComputedStyle(t1.querySelector('.tecla-mute .lampara')).boxShadow.includes('255, 178, 62'),
+      efecto: [...document.querySelectorAll('.selector .tecla.on')].map((b) => b.innerText.trim()) }
     document.querySelectorAll('.tecla-escena')[1].click()
     const pad = document.querySelector('.pad')
     pad.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true })); pad.dispatchEvent(new PointerEvent('pointerup', { bubbles: true }))
     document.querySelectorAll('.tira')[4].querySelector('.tecla-mini').click()
     await new Promise((r) => setTimeout(r, 300))
-    return { high: high.getAttribute('aria-valuetext'), mute1: t1.classList.contains('muda'), lamparaMute: getComputedStyle(t1.querySelector('.tecla-mute .lampara')).boxShadow.includes('255, 178, 62'),
-      nivel1: t1.querySelector('.fader-pista').getAttribute('aria-valuenow') + ' -> ' + t1.querySelector('.fader-valor').innerText,
-      efecto: [...document.querySelectorAll('.selector .tecla.on')].map((b) => b.innerText.trim()), escena: document.querySelector('.tecla-escena.on').innerText.trim() }`)
+    return { ...previo, nivel1: t1.querySelector('.fader-pista').getAttribute('aria-valuenow') + ' -> ' + t1.querySelector('.fader-valor').innerText,
+      escena: document.querySelector('.tecla-escena.on').innerText.trim(),
+      trasEscena: { high: high.getAttribute('aria-valuetext'), desconocidos: document.querySelectorAll('.desconocido').length } }`)
 
   // ---- arrastre real del fader del canal 3, con el ratón
   const caja = await js(`const p = document.querySelectorAll('.tira')[2].querySelector('.fader-tapa').getBoundingClientRect(); return { x: Math.round(p.left + p.width / 2), y: Math.round(p.top + p.height / 2) }`)
@@ -87,6 +91,7 @@ app.whenReady().then(async () => {
   exige(r.conectada.extras.join('|') === 'MONO x2|MONO x2|USB 1/2|USB 3/4', 'interruptores de los canales 5 a 8')
   exige(r.acciones.high === '+0,8' && r.acciones.mute1 && r.acciones.lamparaMute, 'perilla por teclado y mute con lámpara ámbar')
   exige(r.acciones.efecto.join() === 'ROOM' && r.acciones.escena === 'B', 'efecto y escena con una sola tecla encendida')
+  exige(r.acciones.trasEscena.high === '—' && r.acciones.trasEscena.desconocidos > 60, 'tras la escena, la consola muestra desconocido lo que no sabe')
   exige(Number(r.arrastre.nivel3) < 100 && r.arrastre.tapaBajo === 60, 'el fader sigue al ratón: baja 60 px con 60 px de arrastre')
   exige(r.desdeMezclador.nivel2 === '33' && r.desdeMezclador.mute2 && r.desdeMezclador.comp, 'lo que manda el mezclador mueve la consola')
   exige(r.modulacion.antes === 0 && r.modulacion.enModulacion > 0 && r.modulacion.despues === 0, 'los LFO solo se ven en modo MODULACIÓN')

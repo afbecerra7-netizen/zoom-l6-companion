@@ -330,8 +330,9 @@ function updateValue(value: number, fromMidi = false) {
   // Only send MIDI CC if the update is NOT from MIDI input (to avoid feedback loop)
   if (!fromMidi) {
     midiService.sendControlChange(props.control, clampedValue);
-    markKnown();
   }
+  // Known again either way: the app just set it, or the mixer just reported it.
+  markKnown();
   
   // Visual feedback
   isActive.value = true;
