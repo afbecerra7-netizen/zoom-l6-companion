@@ -9,6 +9,7 @@ import {
 } from '../editorSession';
 import { buildGetParam, buildSessionCmd, zoomL6Sysex } from '../messages';
 import { bytesToHex } from '../hex';
+import { loadCapture } from './captureFixtures';
 
 /** `F0 7E 00 06 02 52 72 00 0B 00 '1' '.' '1' '0' F7` — Zoom identity reply with firmware "1.10". */
 const IDENTITY_REPLY = [
@@ -390,6 +391,24 @@ describe('ZoomL6EditorSession', () => {
       expect(transport.commands.at(-1)).toEqual([0xf0, 0x52, 0x00, 0x00, 0x31, 0x03, 0x00, 0xf7]);
       transport.receive(ack(0x03));
       await expect(pending).resolves.toBeUndefined();
+    });
+
+    it('midiOutMode on an L6max (fw 1.10) writes what the official Editor writes: Out 31 0C 00, Thru 31 0C 01', async () => {
+      // captures/maxK-midi-out-mode: the Editor's own writes, in the order it sent them.
+      const editorWrites = loadCapture('maxK-')
+        .filter((m) => m.kind === 'sessionCmd')
+        .map((m) => [...m.raw]);
+      expect(editorWrites).toHaveLength(4);
+      for (const [value, expected] of [[1, editorWrites[0]], [0, editorWrites[1]]] as const) {
+        const { transport, session } = makeSession();
+        await openSession(transport, session);
+        transport.sent.length = 0;
+        const pending = session.setValue('midiOutMode', value, { model: 'l6max' });
+        await vi.advanceTimersByTimeAsync(0);
+        expect(transport.commands.at(-1)).toEqual(expected);
+        transport.receive(ack(0x0c));
+        await expect(pending).resolves.toBeUndefined();
+      }
     });
 
     it('usbAudioMode Multi Track → 31 18 00 on an L6max (fw 1.10)', async () => {

@@ -145,6 +145,14 @@ const L6MAX_SLOTS: SnapshotSlot[] = [
     'L6max fw 1.10 (2026-11-21): byte 4 read 01 with the setting OFF and 00 right after writing 31 03 00 (ON); '
       + 'the official Editor showed OFF and then ON. Inverted like the write (see invertedOn in params.ts)',
   ),
+  slot(
+    'midiOutMode',
+    26,
+    1,
+    true,
+    'captures/maxK-midi-out-mode (L6max fw 1.10, 2026-11-21, MIDI Monitor on the Editor port): three Editor reconnects '
+      + 'read 00 / 01 / 00 here while the official Editor showed Out / Thru / Out; the only byte that changed. Not inverted',
+  ),
   ...padSlots(
     { mode: 13, level: 17, note: 122 },
     false,

@@ -131,7 +131,7 @@ describe('decodeSnapshot (L6max captures)', () => {
     expect(d.layout).toBe('l6max');
     const ids = Object.keys(d.values);
     expect(ids.filter((id) => id.startsWith('pad') || id.startsWith('fx.'))).toEqual([]);
-    expect(ids.sort()).toEqual(['mixerControlViaMidi', 'monitorPoint', 'subOutPoint', 'usbAudioMode']);
+    expect(ids.sort()).toEqual(['midiOutMode', 'mixerControlViaMidi', 'monitorPoint', 'subOutPoint', 'usbAudioMode']);
   });
 
   it('returns the raw 94-entry CC table', () => {
@@ -254,5 +254,18 @@ describe('decodeSnapshot (L6max fw 1.10)', () => {
     expect([off[4], on[4]]).toEqual([0x01, 0x00]);
     expect(decodeSnapshot(off).values.mixerControlViaMidi).toBe(0);
     expect(decodeSnapshot(on).values.mixerControlViaMidi).toBe(1);
+  });
+
+  // captures/maxK-midi-out-mode (2026-11-21): the official Editor opened (showing Out), wrote
+  // Thru -> Out -> Thru, was reopened (showing Thru), wrote Out and was reopened (showing Out).
+  it('reads MIDI Out Mode from byte 26 across the maxK reconnects: 00 = Out, 01 = Thru', () => {
+    const editorOpen = loadCapture('maxK-').filter((m) => m.kind === 'editorOpenState');
+    const payloads = editorOpen.map((m) => (m.kind === 'editorOpenState' ? m.payload : []));
+    expect(payloads.map((p) => p[26])).toEqual([0x00, 0x01, 0x00]);
+    // Byte 26 is the only byte that changes between the three snapshots.
+    for (let i = 0; i < payloads[0]!.length; i++) {
+      if (i !== 26) expect(new Set(payloads.map((p) => p[i])).size).toBe(1);
+    }
+    expect(payloads.map((p) => decodeSnapshot(p).values.midiOutMode)).toEqual([0, 1, 0]);
   });
 });

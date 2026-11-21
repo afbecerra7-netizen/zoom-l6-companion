@@ -150,6 +150,7 @@ restored (`scripts/l6probe.swift`). The snapshots are in
 | 6 | 1 | USB audio mode | `00` Stereo mix / `01` Multi Track |
 | 13–16 | 1 each | pad 1–4 play mode | `00` One-shot / `01` Loop / `02` Hold; unverified (same structure as the L6) |
 | 17–20 | 1 each | pad 1–4 level | `00`–`3B` (−∞ … +10 dB); unverified (same structure as the L6) |
+| 26 | 1 | MIDI out mode | `00` Out / `01` Thru, same values as the L6's byte 19 and the `31 0C` write (fw 1.10, captures/maxK) |
 | 28–121 | 1 each | CC mapping table | 94 bytes: the CC# for each control, in write-order |
 | 122–125 | 1 each | pad 1–4 MIDI note | `00`–`7F` (C−2 … G8, with C3 = 60); unverified (same structure as the L6) |
 | 130–149 | 2 each (LE) | effect parameters | 10 slots (same order as L6; unverified) |
