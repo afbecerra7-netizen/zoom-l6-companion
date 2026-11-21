@@ -385,7 +385,9 @@ watch(() => props.isVisible, (visible) => {
   <div class="debug-drawer" :class="{ expanded: isExpanded }">
     <!-- Debug Toggle Button -->
     <button 
-      class="debug-toggle"
+      class="debug-toggle tecla"
+      :aria-expanded="isExpanded"
+      aria-controls="debug-panel"
       @click="toggleDrawer"
       :class="{ 
         'has-errors': hasErrors, 
@@ -394,28 +396,32 @@ watch(() => props.isVisible, (visible) => {
       }"
       :title="`Debug Console (${errorCount} errors, ${midiCount} MIDI messages)`"
     >
-      <svg class="debug-icon" viewBox="0 0 24 24" fill="currentColor">
-        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
-      </svg>
+      <span class="lampara" aria-hidden="true" :class="{
+        rojo: hasErrors,
+        ambar: hasWarnings && !hasErrors,
+        blanco: !hasErrors && !hasWarnings,
+        on: hasErrors || hasWarnings || errorCount > 0 || midiCount > 0
+      }" />
+      <span>Debug</span>
       <span class="debug-badge" v-if="errorCount > 0 || midiCount > 0">
         {{ errorCount + midiCount }}
       </span>
     </button>
 
     <!-- Debug Panel -->
-    <div class="debug-panel" v-if="isExpanded">
+    <div id="debug-panel" class="debug-panel" v-if="isExpanded">
       <div class="debug-header">
-        <h3 class="debug-title">Debug Console</h3>
+        <h3 class="debug-title t-rotulo">Debug Console</h3>
         <div class="debug-controls">
           <button 
-            class="clear-button"
+            class="tecla clear-button"
             @click="clearLogs('all')"
             title="Clear all logs"
           >
             Clear All
           </button>
           <button 
-            class="close-button"
+            class="tecla close-button"
             @click="toggleDrawer"
             title="Close debug console"
           >
@@ -427,31 +433,31 @@ watch(() => props.isVisible, (visible) => {
       <!-- Tab Navigation -->
       <div class="debug-tabs">
         <button 
-          class="debug-tab"
-          :class="{ active: activeTab === 'errors' }"
+          class="debug-tab boton-barra"
+          :class="{ activo: activeTab === 'errors' }"
           @click="activeTab = 'errors'"
         >
           Errors
           <span class="tab-badge" v-if="errorCount > 0">{{ errorCount }}</span>
         </button>
         <button 
-          class="debug-tab"
-          :class="{ active: activeTab === 'midi' }"
+          class="debug-tab boton-barra"
+          :class="{ activo: activeTab === 'midi' }"
           @click="activeTab = 'midi'"
         >
           MIDI
           <span class="tab-badge" v-if="midiCount > 0">{{ midiCount }}</span>
         </button>
         <button
-          class="debug-tab"
-          :class="{ active: activeTab === 'system' }"
+          class="debug-tab boton-barra"
+          :class="{ activo: activeTab === 'system' }"
           @click="activeTab = 'system'"
         >
           System
         </button>
         <button
-          class="debug-tab"
-          :class="{ active: activeTab === 'sysex' }"
+          class="debug-tab boton-barra"
+          :class="{ activo: activeTab === 'sysex' }"
           @click="activeTab = 'sysex'"
         >
           SysEx
@@ -463,8 +469,8 @@ watch(() => props.isVisible, (visible) => {
         <!-- Errors Tab -->
         <div v-if="activeTab === 'errors'" class="tab-panel">
           <div class="panel-header">
-            <h4>Error Logs</h4>
-            <button class="clear-button small" @click="clearLogs('errors')">Clear</button>
+            <h4 class="t-rotulo">Error Logs</h4>
+            <button class="tecla clear-button small" @click="clearLogs('errors')">Clear</button>
           </div>
           <div class="log-container">
             <div 
@@ -490,8 +496,8 @@ watch(() => props.isVisible, (visible) => {
         <!-- MIDI Tab -->
         <div v-if="activeTab === 'midi'" class="tab-panel">
           <div class="panel-header">
-            <h4>MIDI Messages</h4>
-            <button class="clear-button small" @click="clearLogs('midi')">Clear</button>
+            <h4 class="t-rotulo">MIDI Messages</h4>
+            <button class="tecla clear-button small" @click="clearLogs('midi')">Clear</button>
           </div>
           <div class="log-container">
             <div 
@@ -523,8 +529,8 @@ watch(() => props.isVisible, (visible) => {
         <!-- System Tab -->
         <div v-if="activeTab === 'system'" class="tab-panel">
           <div class="panel-header">
-            <h4>System Information</h4>
-            <button class="refresh-button small" @click="updateSystemInfo">Refresh</button>
+            <h4 class="t-rotulo">System Information</h4>
+            <button class="tecla refresh-button small" @click="updateSystemInfo">Refresh</button>
           </div>
           <div class="system-info">
             <div class="info-grid">
@@ -588,511 +594,96 @@ watch(() => props.isVisible, (visible) => {
   position: fixed;
   bottom: 20px;
   right: 20px;
-  /* Above Advanced Settings (10000) and platform prompt (1000) */
+  /* Above Advanced Settings (10000) and platform prompt (1000). */
   z-index: 11000;
-  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
-  font-size: 12px;
+  color: var(--serigrafia);
+  font: 400 13px/1.5 var(--f-texto);
 }
 
-.debug-toggle {
-  position: relative;
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-  border: none;
-  background: rgba(0, 0, 0, 0.8);
-  color: #fff;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.3s ease;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-  backdrop-filter: blur(10px);
-}
-
-.debug-toggle:hover {
-  background: rgba(0, 0, 0, 0.9);
-  transform: scale(1.1);
-}
-
-.debug-toggle.has-errors {
-  background: rgba(244, 67, 54, 0.9);
-  animation: pulse-error 2s infinite;
-}
-
-.debug-toggle.has-warnings {
-  background: rgba(255, 152, 0, 0.9);
-  animation: pulse-warning 2s infinite;
-}
-
-.debug-toggle.has-logs {
-  background: rgba(74, 144, 226, 0.9);
-}
-
-.debug-icon {
-  width: 24px;
-  height: 24px;
-}
-
-.debug-badge {
-  position: absolute;
-  top: -4px;
-  right: -4px;
-  background: #f44336;
-  color: white;
-  border-radius: 10px;
-  padding: 2px 6px;
-  font-size: 10px;
-  font-weight: bold;
-  min-width: 16px;
+.debug-toggle { position: relative; height: 36px; padding: 0 12px; }
+.debug-badge, .tab-badge {
+  min-width: 18px;
+  padding: 1px 4px;
+  border-radius: 3px;
+  background: var(--hundido);
+  color: var(--serigrafia);
+  font: 500 11px/1.5 var(--f-datos);
   text-align: center;
 }
-
 .debug-panel {
   position: absolute;
-  bottom: 60px;
+  bottom: 48px;
   right: 0;
-  width: 400px;
-  max-width: 90vw;
-  max-height: 60vh;
-  background: rgba(0, 0, 0, 0.95);
-  border: 1px solid #333;
-  border-radius: 8px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(20px);
+  width: 640px;
+  max-width: calc(100vw - 40px);
+  max-height: min(76vh, calc(100dvh - 88px));
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  border: 1px solid var(--linea);
+  border-radius: 10px;
+  background: var(--chasis);
+  box-shadow: var(--relieve-4), 0 12px 32px rgba(0, 0, 0, 0.5);
 }
-
-.debug-header {
+.debug-header, .panel-header {
   display: flex;
+  align-items: center;
   justify-content: space-between;
-  align-items: center;
-  padding: 12px 16px;
-  background: rgba(255, 255, 255, 0.1);
-  border-bottom: 1px solid #333;
+  gap: 12px;
+  padding: 12px;
+  border-bottom: 1px solid var(--linea);
+  background: var(--placa);
 }
-
-.debug-title {
-  margin: 0;
-  font-size: 14px;
-  font-weight: 600;
-  color: #4a90e2;
-}
-
-.debug-controls {
-  display: flex;
-  gap: 8px;
-}
-
-.clear-button, .close-button, .refresh-button {
-  padding: 4px 8px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 4px;
-  background: rgba(255, 255, 255, 0.1);
-  color: #ccc;
-  font-size: 11px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.clear-button:hover, .refresh-button:hover {
-  background: rgba(255, 255, 255, 0.2);
-  color: #fff;
-}
-
-.close-button {
-  width: 24px;
-  height: 24px;
-  padding: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 16px;
-  line-height: 1;
-}
-
-.close-button:hover {
-  background: #f44336;
-  border-color: #f44336;
-  color: #fff;
-}
-
-.debug-tabs {
-  display: flex;
-  background: rgba(255, 255, 255, 0.05);
-  border-bottom: 1px solid #333;
-}
-
-.debug-tab {
-  flex: 1;
-  padding: 8px 12px;
-  border: none;
-  background: transparent;
-  color: #999;
-  font-size: 11px;
-  font-weight: 600;
-  text-transform: uppercase;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-}
-
-.debug-tab:hover {
-  background: rgba(255, 255, 255, 0.1);
-  color: #ccc;
-}
-
-.debug-tab.active {
-  background: rgba(74, 144, 226, 0.2);
-  color: #4a90e2;
-  border-bottom: 2px solid #4a90e2;
-}
-
-.tab-badge {
-  background: #f44336;
-  color: white;
-  border-radius: 8px;
-  padding: 1px 4px;
-  font-size: 9px;
-  min-width: 12px;
-  text-align: center;
-}
-
-.debug-content {
-  flex: 1;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-}
-
-.tab-panel {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-
-.panel-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 8px 16px;
-  background: rgba(255, 255, 255, 0.03);
-  border-bottom: 1px solid #333;
-}
-
-.panel-header h4 {
-  margin: 0;
-  font-size: 12px;
-  font-weight: 600;
-  color: #ccc;
-}
-
-.clear-button.small, .refresh-button.small {
-  padding: 2px 6px;
-  font-size: 10px;
-}
-
-.log-container {
-  flex: 1;
-  overflow-y: auto;
-  padding: 8px;
-}
-
+.debug-title { flex: 1; font-size: 15px; }
+.debug-controls { display: flex; gap: 8px; }
+.close-button { font-size: 22px; padding: 0; }
+.debug-tabs { display: flex; gap: 8px; padding: 10px 12px; border-bottom: 1px solid var(--linea); }
+.debug-tab { display: flex; align-items: center; justify-content: center; gap: 6px; flex: 1; min-width: 0; padding: 0 8px; }
+.debug-content, .tab-panel { display: flex; flex-direction: column; flex: 1; min-height: 0; overflow: hidden; }
+.panel-header { background: var(--chasis); padding: 10px 12px; }
+.panel-header h4 { flex: 1; }
+.log-container { flex: 1; min-height: 0; overflow: auto; padding: 12px; }
 .log-entry {
   margin-bottom: 8px;
-  padding: 8px;
+  padding: 10px;
+  border: 1px solid var(--linea);
+  border-left: 3px solid var(--linea);
   border-radius: 4px;
-  border-left: 3px solid #333;
-  background: rgba(255, 255, 255, 0.02);
+  background: var(--hundido);
+  font: 400 12px/1.6 var(--f-datos);
+  overflow-wrap: anywhere;
 }
+.log-entry.log-error { border-left-color: var(--rojo); }
+.log-entry.log-warning { border-left-color: var(--ambar); }
+.log-error .log-type { color: var(--rojo); }
+.log-warning .log-type { color: var(--ambar); }
+.log-header { display: flex; align-items: baseline; flex-wrap: wrap; gap: 8px; margin-bottom: 5px; }
+.log-timestamp, .log-source { color: var(--serigrafia-3); font-size: 11px; }
+.log-type, .log-direction, .log-channel { color: var(--serigrafia-2); font-weight: 500; }
+.log-direction { border: 1px solid var(--linea); border-radius: 3px; padding: 0 4px; }
+.log-message { white-space: pre-wrap; }
+.log-stack, .log-data { margin-top: 6px; color: var(--serigrafia-2); white-space: pre-wrap; }
+.log-data pre { margin: 0; font: inherit; white-space: pre-wrap; overflow-wrap: anywhere; }
+.no-logs { padding: 24px 12px; text-align: center; color: var(--serigrafia-3); font: 400 13px/1.5 var(--f-texto); }
+.system-info { padding: 12px; overflow: auto; min-height: 0; }
+.info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.info-item { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.info-label { color: var(--serigrafia-2); font: 600 12px/1.4 var(--f-panel); letter-spacing: 0.12em; text-transform: uppercase; }
+.info-value { color: var(--serigrafia); font: 400 12px/1.6 var(--f-datos); overflow-wrap: anywhere; }
+.info-value.online, .info-value.supported, .info-value.connected { color: var(--verde); }
+.info-value.offline, .info-value.unsupported, .info-value.disconnected { color: var(--serigrafia-3); }
+.user-agent { margin-top: 16px; }
+.user-agent .info-value { margin-top: 6px; padding: 10px; border-radius: 5px; background: var(--hundido); box-shadow: var(--hueco); }
 
-.log-entry.log-error {
-  border-left-color: #f44336;
-  background: rgba(244, 67, 54, 0.1);
+@media (max-width: 600px) {
+  .debug-drawer { bottom: 10px; right: 10px; }
+  .debug-panel { max-width: calc(100vw - 20px); max-height: min(80vh, calc(100dvh - 78px)); }
+  .debug-tabs { gap: 6px; }
+  .debug-tab { letter-spacing: 0.06em; padding: 0 5px; }
+  .info-grid { grid-template-columns: 1fr; }
 }
-
-.log-entry.log-warning {
-  border-left-color: #ff9800;
-  background: rgba(255, 152, 0, 0.1);
-}
-
-.log-entry.log-info {
-  border-left-color: #2196f3;
-  background: rgba(33, 150, 243, 0.1);
-}
-
-.log-entry.midi-in {
-  border-left-color: #4caf50;
-  background: rgba(76, 175, 80, 0.1);
-}
-
-.log-entry.midi-out {
-  border-left-color: #9c27b0;
-  background: rgba(156, 39, 176, 0.1);
-}
-
-.log-entry.midi-pc {
-  border-left-color: #ff9800;
-  background: rgba(255, 152, 0, 0.1);
-}
-
-.log-entry.midi-sysex .log-message {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  font-size: 12px;
-  word-break: break-all;
-}
-
-.log-header {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 4px;
-  flex-wrap: wrap;
-}
-
-.log-timestamp {
-  color: #666;
-  font-size: 10px;
-}
-
-.log-type, .log-direction, .log-channel, .log-source {
-  padding: 1px 4px;
-  border-radius: 2px;
-  font-size: 9px;
-  font-weight: bold;
-  text-transform: uppercase;
-}
-
-.log-type {
-  background: #333;
-  color: #ccc;
-}
-
-.log-direction {
-  background: #4caf50;
-  color: white;
-}
-
-.log-channel {
-  background: #2196f3;
-  color: white;
-}
-
-.log-source {
-  background: #666;
-  color: white;
-}
-
-.log-message {
-  color: #ccc;
-  font-size: 11px;
-  line-height: 1.4;
-  word-break: break-word;
-}
-
-.log-stack, .log-data {
-  margin-top: 4px;
-  padding: 4px;
-  background: rgba(0, 0, 0, 0.3);
-  border-radius: 2px;
-  font-size: 10px;
-  color: #999;
-  white-space: pre-wrap;
-  word-break: break-all;
-}
-
-.log-data pre {
-  margin: 0;
-  font-family: inherit;
-}
-
-.no-logs {
-  text-align: center;
-  color: #666;
-  font-style: italic;
-  padding: 20px;
-}
-
-.system-info {
-  padding: 16px;
-}
-
-.info-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
-  margin-bottom: 16px;
-}
-
-.info-item {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.info-label {
-  font-size: 10px;
-  color: #666;
-  text-transform: uppercase;
-  font-weight: 600;
-}
-
-.info-value {
-  font-size: 11px;
-  color: #ccc;
-  word-break: break-word;
-}
-
-.info-value.online {
-  color: #4caf50;
-}
-
-.info-value.offline {
-  color: #f44336;
-}
-
-.info-value.supported {
-  color: #4caf50;
-}
-
-.info-value.unsupported {
-  color: #f44336;
-}
-
-.info-value.connected {
-  color: #4caf50;
-}
-
-.info-value.disconnected {
-  color: #f44336;
-}
-
-.user-agent {
-  margin-top: 16px;
-}
-
-.user-agent .info-label {
-  margin-bottom: 4px;
-}
-
-.user-agent .info-value {
-  font-size: 10px;
-  line-height: 1.3;
-  max-height: 60px;
-  overflow-y: auto;
-  padding: 8px;
-  background: rgba(0, 0, 0, 0.3);
-  border-radius: 4px;
-}
-
-/* Animations */
-@keyframes pulse-error {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(244, 67, 54, 0.7); }
-  50% { box-shadow: 0 0 0 10px rgba(244, 67, 54, 0); }
-}
-
-@keyframes pulse-warning {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(255, 152, 0, 0.7); }
-  50% { box-shadow: 0 0 0 10px rgba(255, 152, 0, 0); }
-}
-
-/* Mobile optimizations */
-@media (max-width: 768px) {
-  .debug-drawer {
-    bottom: 10px;
-    right: 10px;
-  }
-  
-  .debug-panel {
-    width: calc(100vw - 20px);
-    max-width: none;
-    max-height: 70vh;
-    right: -10px;
-  }
-  
-  .info-grid {
-    grid-template-columns: 1fr;
-  }
-  
-  .debug-tabs {
-    flex-direction: row;
-  }
-  
-  .debug-tab {
-    padding: 8px 6px;
-    font-size: 10px;
-  }
-}
-
-@media (max-width: 480px) {
-  .debug-toggle {
-    width: 44px;
-    height: 44px;
-  }
-  
-  .debug-icon {
-    width: 20px;
-    height: 20px;
-  }
-  
-  .debug-panel {
-    max-height: 80vh;
-  }
-  
-  .debug-tabs {
-    flex-direction: row;
-  }
-  
-  .debug-tab {
-    padding: 6px 4px;
-    font-size: 9px;
-  }
-  
-  .tab-badge {
-    font-size: 8px;
-    padding: 1px 3px;
-  }
-  
-  .log-header {
-    flex-direction: column;
-    gap: 2px;
-  }
-  
-  .log-timestamp {
-    font-size: 9px;
-  }
-  
-  .log-message {
-    font-size: 10px;
-  }
-}
-
-/* Touch-friendly interactions */
 @media (hover: none) and (pointer: coarse) {
-  .debug-toggle {
-    width: 52px;
-    height: 52px;
-  }
-  
-  .debug-icon {
-    width: 26px;
-    height: 26px;
-  }
-  
-  .clear-button, .close-button, .refresh-button {
-    padding: 8px 12px;
-    font-size: 12px;
-  }
-  
-  .debug-tab {
-    padding: 12px 16px;
-    font-size: 12px;
-  }
+  .tecla, .boton-barra { min-height: 40px; }
+  .debug-panel { bottom: 52px; max-height: calc(100dvh - 82px); }
 }
 </style>
