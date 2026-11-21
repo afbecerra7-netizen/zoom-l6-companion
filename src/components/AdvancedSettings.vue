@@ -394,25 +394,27 @@ watch(() => props.isVisible, (visible) => {
 <template>
   <Teleport to="body">
     <div v-if="isVisible" class="advanced-settings-overlay" @click.self="cancel">
-      <div class="advanced-settings-dialog">
+      <div class="advanced-settings-dialog" role="dialog" aria-modal="true" aria-labelledby="advanced-settings-title">
         <div class="dialog-header">
-          <h2>Advanced Settings</h2>
-          <button class="close-button" @click="cancel" title="Close">×</button>
+          <h2 id="advanced-settings-title">Advanced Settings</h2>
+          <button type="button" class="tecla close-button" @click="cancel" title="Close" aria-label="Close">×</button>
         </div>
-        
+
         <div class="dialog-content">
-          <p class="warning-text">
-            ⚠️ Changing these settings may cause conflicts. Only modify if you know what you're doing.
+          <p class="banner banner--warn">
+            <i class="lampara ambar on" aria-hidden="true"></i>
+            <span>Changing these settings may cause conflicts. Only modify if you know what you're doing.</span>
           </p>
-          
-          <p v-if="hasCustomSettings" class="info-text">
-            💾 Custom settings loaded from browser storage
+
+          <p v-if="hasCustomSettings" class="banner banner--info">
+            <i class="lampara blanco on" aria-hidden="true"></i>
+            <span>Custom settings loaded from browser storage</span>
           </p>
-          
+
           <!-- Mixer Type Override -->
-          <div class="global-setting">
-            <label for="mixer-type">Mixer Type Override</label>
-            <select 
+          <div class="grupo global-setting">
+            <label for="mixer-type" class="t-rotulo">Mixer Type Override</label>
+            <select
               id="mixer-type"
               v-model="mixerTypeOverride"
               class="setting-select"
@@ -422,14 +424,20 @@ watch(() => props.isVisible, (visible) => {
             </select>
             <p class="setting-hint">Override the auto-detected mixer type. Changing this will affect available controls.</p>
           </div>
-          
 
           <!-- Device Settings (SysEx, mass storage, editor link) -->
           <div class="settings-section">
-            <div class="section-header" @click="toggleSection('device')">
-              <h3>Device Settings</h3>
-              <span class="toggle-icon">{{ expandedSections.device ? '▼' : '▶' }}</span>
-            </div>
+            <h3 class="section-heading">
+              <button
+                type="button"
+                class="section-header"
+                :aria-expanded="expandedSections.device"
+                @click="toggleSection('device')"
+              >
+                <span>Device Settings</span>
+                <span class="toggle-icon" aria-hidden="true">{{ expandedSections.device ? '▾' : '▸' }}</span>
+              </button>
+            </h3>
 
             <div v-if="expandedSections.device" class="section-content">
               <DeviceSettingsPanel
@@ -443,191 +451,198 @@ watch(() => props.isVisible, (visible) => {
 
           <!-- Channel Controls Section -->
           <div class="settings-section">
-            <div class="section-header" @click="toggleSection('channels')">
-              <h3>Channel Controls</h3>
-              <span class="toggle-icon">{{ expandedSections.channels ? '▼' : '▶' }}</span>
-            </div>
-            
-            <div v-if="expandedSections.channels" class="section-content">
-              <div v-for="channel in editableChannelControls" :key="channel.channel" class="channel-group">
-                <h4>Channel {{ channel.channel }}</h4>
-                
+            <h3 class="section-heading">
+              <button
+                type="button"
+                class="section-header"
+                :aria-expanded="expandedSections.channels"
+                @click="toggleSection('channels')"
+              >
+                <span>Channel Controls</span>
+                <span class="toggle-icon" aria-hidden="true">{{ expandedSections.channels ? '▾' : '▸' }}</span>
+              </button>
+            </h3>
+
+            <div v-if="expandedSections.channels" class="section-content section-stack">
+              <div v-for="channel in editableChannelControls" :key="channel.channel" class="grupo channel-group">
+                <h4 class="t-rotulo">Channel {{ channel.channel }}</h4>
+
                 <div class="controls-grid">
                   <!-- Volume -->
                   <div class="control-row">
                     <label>Volume (CC)</label>
-                    <input 
-                      type="number" 
+                    <input
+                      type="number"
                       v-model.number="channel.controls.volume.cc"
-                      min="0" 
+                      min="0"
                       max="127"
                       class="cc-input"
                     />
                   </div>
-                  
+
                   <!-- Pan -->
                   <div class="control-row">
                     <label>Pan (CC)</label>
-                    <input 
-                      type="number" 
+                    <input
+                      type="number"
                       v-model.number="channel.controls.pan.cc"
-                      min="0" 
+                      min="0"
                       max="127"
                       class="cc-input"
                     />
                   </div>
-                  
+
                   <!-- EQ High -->
                   <div class="control-row">
                     <label>EQ High (CC)</label>
-                    <input 
-                      type="number" 
+                    <input
+                      type="number"
                       v-model.number="channel.controls.eq.high.cc"
-                      min="0" 
+                      min="0"
                       max="127"
                       class="cc-input"
                     />
                   </div>
-                  
+
                   <!-- EQ Mid -->
                   <div class="control-row">
                     <label>EQ Mid (CC)</label>
-                    <input 
-                      type="number" 
+                    <input
+                      type="number"
                       v-model.number="channel.controls.eq.mid.cc"
-                      min="0" 
+                      min="0"
                       max="127"
                       class="cc-input"
                     />
                   </div>
-                  
+
                   <!-- EQ Mid Freq -->
                   <div class="control-row">
                     <label>EQ Mid Freq (CC)</label>
-                    <input 
-                      type="number" 
+                    <input
+                      type="number"
                       v-model.number="channel.controls.eq.midFreq.cc"
-                      min="0" 
+                      min="0"
                       max="127"
                       class="cc-input"
                     />
                   </div>
-                  
+
                   <!-- EQ Low -->
                   <div class="control-row">
                     <label>EQ Low (CC)</label>
-                    <input 
-                      type="number" 
+                    <input
+                      type="number"
                       v-model.number="channel.controls.eq.low.cc"
-                      min="0" 
+                      min="0"
                       max="127"
                       class="cc-input"
                     />
                   </div>
-                  
+
                   <!-- AUX1 -->
                   <div class="control-row">
                     <label>AUX1 (CC)</label>
-                    <input 
-                      type="number" 
+                    <input
+                      type="number"
                       v-model.number="channel.controls.aux1.cc"
-                      min="0" 
+                      min="0"
                       max="127"
                       class="cc-input"
                     />
                   </div>
-                  
+
                   <!-- AUX2 -->
                   <div class="control-row">
                     <label>AUX2 (CC)</label>
-                    <input 
-                      type="number" 
+                    <input
+                      type="number"
                       v-model.number="channel.controls.aux2.cc"
-                      min="0" 
+                      min="0"
                       max="127"
                       class="cc-input"
                     />
                   </div>
-                  
+
                   <!-- EFX Send -->
                   <div class="control-row">
                     <label>EFX Send (CC)</label>
-                    <input 
-                      type="number" 
+                    <input
+                      type="number"
                       v-model.number="channel.controls.efxSend.cc"
-                      min="0" 
+                      min="0"
                       max="127"
                       class="cc-input"
                     />
                   </div>
-                  
+
                   <!-- SUB MIX (if exists) -->
                   <div v-if="channel.controls.subMix" class="control-row">
                     <label>SUB MIX (CC)</label>
-                    <input 
-                      type="number" 
+                    <input
+                      type="number"
                       v-model.number="channel.controls.subMix.cc"
-                      min="0" 
+                      min="0"
                       max="127"
                       class="cc-input"
                     />
                   </div>
-                  
+
                   <!-- Mute -->
                   <div class="control-row">
                     <label>Mute (CC)</label>
-                    <input 
-                      type="number" 
+                    <input
+                      type="number"
                       v-model.number="channel.controls.mute.cc"
-                      min="0" 
+                      min="0"
                       max="127"
                       class="cc-input"
                     />
                   </div>
-                  
+
                   <!-- MONO x2 (if exists) -->
                   <div v-if="channel.controls.monoX2" class="control-row">
                     <label>MONO x2 (CC)</label>
-                    <input 
-                      type="number" 
+                    <input
+                      type="number"
                       v-model.number="channel.controls.monoX2.cc"
-                      min="0" 
+                      min="0"
                       max="127"
                       class="cc-input"
                     />
                   </div>
-                  
+
                   <!-- USB 1/2 (if exists) -->
                   <div v-if="channel.controls.usb12" class="control-row">
                     <label>USB 1/2 (CC)</label>
-                    <input 
-                      type="number" 
+                    <input
+                      type="number"
                       v-model.number="channel.controls.usb12.cc"
-                      min="0" 
+                      min="0"
                       max="127"
                       class="cc-input"
                     />
                   </div>
-                  
+
                   <!-- USB 3/4 (if exists) -->
                   <div v-if="channel.controls.usb34" class="control-row">
                     <label>USB 3/4 (CC)</label>
-                    <input 
-                      type="number" 
+                    <input
+                      type="number"
                       v-model.number="channel.controls.usb34.cc"
-                      min="0" 
+                      min="0"
                       max="127"
                       class="cc-input"
                     />
                   </div>
-                  
+
                   <!-- MIDI Channel -->
                   <div class="control-row highlight">
                     <label>MIDI Channel</label>
-                    <input 
-                      type="number" 
+                    <input
+                      type="number"
                       v-model.number="channel.controls.volume.channel"
-                      min="1" 
+                      min="1"
                       max="16"
                       class="cc-input"
                     />
@@ -636,52 +651,68 @@ watch(() => props.isVisible, (visible) => {
               </div>
             </div>
           </div>
-          
+
           <!-- Global Controls Section -->
           <div class="settings-section">
-            <div class="section-header" @click="toggleSection('global')">
-              <h3>Global Controls</h3>
-              <span class="toggle-icon">{{ expandedSections.global ? '▼' : '▶' }}</span>
-            </div>
-            
+            <h3 class="section-heading">
+              <button
+                type="button"
+                class="section-header"
+                :aria-expanded="expandedSections.global"
+                @click="toggleSection('global')"
+              >
+                <span>Global Controls</span>
+                <span class="toggle-icon" aria-hidden="true">{{ expandedSections.global ? '▾' : '▸' }}</span>
+              </button>
+            </h3>
+
             <div v-if="expandedSections.global" class="section-content">
-              <div class="controls-grid">
-                <!-- EFX Type -->
-                <div class="control-row">
-                  <label>EFX Type (CC)</label>
-                  <input 
-                    type="number" 
-                    v-model.number="editableGlobalControls.efxType.cc"
-                    min="0" 
-                    max="127"
-                    class="cc-input"
-                  />
+              <div class="grupo channel-group">
+                <div class="controls-grid">
+                  <!-- EFX Type -->
+                  <div class="control-row">
+                    <label>EFX Type (CC)</label>
+                    <input
+                      type="number"
+                      v-model.number="editableGlobalControls.efxType.cc"
+                      min="0"
+                      max="127"
+                      class="cc-input"
+                    />
+                  </div>
+
+                  <!-- Compressor -->
+                  <div class="control-row">
+                    <label>Compressor (CC)</label>
+                    <input
+                      type="number"
+                      v-model.number="editableGlobalControls.compressor.cc"
+                      min="0"
+                      max="127"
+                      class="cc-input"
+                    />
+                  </div>
                 </div>
-                
-                <!-- Compressor -->
-                <div class="control-row">
-                  <label>Compressor (CC)</label>
-                  <input 
-                    type="number" 
-                    v-model.number="editableGlobalControls.compressor.cc"
-                    min="0" 
-                  max="127"
-                  class="cc-input"
-                />
               </div>
             </div>
           </div>
-        </div>
-          
+
           <!-- Sound Pads Section -->
           <div class="settings-section">
-            <div class="section-header" @click="toggleSection('soundPads')">
-              <h3>Sound Pads</h3>
-              <span class="toggle-icon">{{ expandedSections.soundPads ? '▼' : '▶' }}</span>
-            </div>
-            
-            <div v-if="expandedSections.soundPads" class="section-content">
-              <p class="setting-hint pad-settings-hint">
+            <h3 class="section-heading">
+              <button
+                type="button"
+                class="section-header"
+                :aria-expanded="expandedSections.soundPads"
+                @click="toggleSection('soundPads')"
+              >
+                <span>Sound Pads</span>
+                <span class="toggle-icon" aria-hidden="true">{{ expandedSections.soundPads ? '▾' : '▸' }}</span>
+              </button>
+            </h3>
+
+            <div v-if="expandedSections.soundPads" class="section-content section-stack">
+              <p class="setting-hint">
                 {{ showPadClockSync ? 'Play mode, level and MIDI clock sync' : 'Play mode and level' }} apply to the mixer immediately.
                 MIDI Note updates the mixer immediately and this app's pad on Save; Cancel puts the mixer's notes back.
               </p>
@@ -697,13 +728,16 @@ watch(() => props.isVisible, (visible) => {
                     class="pad-settings-badge"
                     :class="{ 'pad-settings-badge--assigned': padFile(padIndex)?.assigned }"
                     :title="padFile(padIndex)?.assigned ? `${pad.name}: ${padFileLabel(padIndex)}` : pad.name"
-                  >{{ pad.id }}</div>
+                  >
+                    <i class="lampara blanco" :class="{ on: padFile(padIndex)?.assigned }" aria-hidden="true"></i>
+                    <span>{{ pad.id }}</span>
+                  </div>
 
                   <div class="control-row">
                     <label>File</label>
                     <span
                       class="pad-file-name"
-                      :class="{ 'pad-file-name--empty': !padFile(padIndex) || !padFile(padIndex)!.assigned }"
+                      :class="{ 'pad-file-name--empty': !padFile(padIndex)?.assigned }"
                       :title="padFileLabel(padIndex)"
                     >{{ padFileLabel(padIndex) }}</span>
                   </div>
@@ -764,14 +798,14 @@ watch(() => props.isVisible, (visible) => {
             </div>
           </div>
         </div>
-        
+
         <div class="dialog-footer">
-          <button class="reset-button" @click="resetToDefaults">
+          <button type="button" class="tecla reset-button" @click="resetToDefaults">
             Reset to Defaults
           </button>
           <div class="action-buttons">
-            <button class="cancel-button" @click="cancel">Cancel</button>
-            <button class="save-button" @click="saveChanges">Save Changes</button>
+            <button type="button" class="tecla cancel-button" @click="cancel">Cancel</button>
+            <button type="button" class="tecla save-button" @click="saveChanges">Save Changes</button>
           </div>
         </div>
       </div>
@@ -782,11 +816,8 @@ watch(() => props.isVisible, (visible) => {
 <style scoped>
 .advanced-settings-overlay {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.8);
+  inset: 0;
+  background: rgba(0, 0, 0, 0.72);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -796,290 +827,273 @@ watch(() => props.isVisible, (visible) => {
 }
 
 .advanced-settings-dialog {
-  background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%);
-  border: 2px solid #4a90e2;
-  border-radius: 12px;
+  background: var(--chasis);
+  border: 1px solid var(--linea);
+  border-radius: 10px;
   max-width: 900px;
   width: 100%;
   max-height: 90vh;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 10px 50px rgba(74, 144, 226, 0.3);
+  overflow: hidden;
+  color: var(--serigrafia);
+  box-shadow: var(--relieve-1), 0 24px 64px rgba(0, 0, 0, 0.75);
 }
 
 .dialog-header {
+  flex: none;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 20px 24px;
-  border-bottom: 2px solid #333;
-  background: rgba(74, 144, 226, 0.1);
+  padding: 14px 20px;
+  background: var(--hundido);
+  box-shadow: 0 1px 0 rgba(255, 244, 226, 0.06);
 }
 
 .dialog-header h2 {
-  color: #4a90e2;
-  font-size: 24px;
-  font-weight: 600;
   margin: 0;
+  font: 800 18px/1 var(--f-panel);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--serigrafia);
 }
 
 .close-button {
-  background: none;
-  border: none;
-  color: #ccc;
-  font-size: 32px;
-  cursor: pointer;
+  width: 30px;
+  min-width: 30px;
+  height: 30px;
   padding: 0;
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: color 0.2s;
+  font-size: 18px;
+  letter-spacing: 0;
+  color: var(--serigrafia-2);
 }
 
 .close-button:hover {
-  color: #fff;
+  color: var(--serigrafia);
 }
 
 .dialog-content {
   flex: 1;
   overflow-y: auto;
-  padding: 24px;
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
 }
 
-.warning-text {
-  background: rgba(255, 152, 0, 0.1);
-  border: 1px solid rgba(255, 152, 0, 0.3);
-  border-radius: 6px;
-  padding: 12px;
-  margin-bottom: 16px;
-  color: #ff9800;
-  font-size: 14px;
+/* Que nada se encoja: con una sección abierta, el cuerpo hace scroll en vez de aplastar
+   las cabeceras de las demás (las secciones llevan overflow: hidden). */
+.dialog-content > * {
+  flex-shrink: 0;
 }
 
-.info-text {
-  background: rgba(76, 175, 80, 0.1);
-  border: 1px solid rgba(76, 175, 80, 0.3);
+.banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  padding: 10px 12px;
   border-radius: 6px;
-  padding: 12px;
-  margin-bottom: 16px;
-  color: #4caf50;
-  font-size: 14px;
+  background: var(--hundido);
+  box-shadow: var(--hueco);
+  border-left: 3px solid var(--linea);
+  font: 400 13.5px/1.45 var(--f-texto);
+  color: var(--serigrafia-2);
+}
+
+.banner--warn {
+  border-left-color: var(--ambar);
+  color: var(--serigrafia);
+}
+
+.banner--info {
+  border-left-color: var(--serigrafia-3);
 }
 
 .global-setting {
-  background: rgba(74, 144, 226, 0.15);
-  border: 2px solid rgba(74, 144, 226, 0.4);
+  padding: 12px 14px;
+}
+
+.setting-select {
+  height: 32px;
+  min-width: 156px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 5px;
+  background: var(--hundido);
+  box-shadow: var(--hueco);
+  color: var(--serigrafia);
+  font: 500 13px/1 var(--f-datos);
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+
+.setting-select:hover:not(:disabled) {
+  box-shadow: var(--hueco), 0 0 0 1px var(--linea);
+}
+
+.setting-select:focus-visible {
+  outline: 2px solid var(--vfd);
+  outline-offset: 2px;
+}
+
+.setting-select option {
+  background: var(--chasis);
+  color: var(--serigrafia);
+}
+
+.setting-hint {
+  margin: 0;
+  font: 400 12.5px/1.45 var(--f-texto);
+  color: var(--serigrafia-3);
+}
+
+.settings-section {
   border-radius: 8px;
-  padding: 16px;
-  margin-bottom: 24px;
+  background: var(--placa);
+  box-shadow: var(--relieve-1);
+  overflow: hidden;
+}
+
+.section-heading {
+  margin: 0;
+}
+
+.section-header {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 14px;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  user-select: none;
+  font: 700 13.5px/1 var(--f-panel);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--serigrafia);
+  text-align: left;
+  transition: background 0.12s;
+}
+
+.section-header:hover {
+  background: var(--placa-2);
+}
+
+.section-header:focus-visible {
+  outline: 2px solid var(--vfd);
+  outline-offset: -2px;
+}
+
+.toggle-icon {
+  font-size: 13px;
+  color: var(--serigrafia-2);
+}
+
+.section-content {
+  padding: 14px;
+  background: var(--chasis);
+  border-top: 1px solid var(--linea);
+}
+
+.section-stack {
   display: flex;
   flex-direction: column;
   gap: 12px;
 }
 
-.global-setting label {
-  color: #4a90e2;
-  font-size: 14px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.setting-select {
-  background: rgba(0, 0, 0, 0.5);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 6px;
-  padding: 10px 16px;
-  color: #fff;
-  font-size: 16px;
-  font-weight: 500;
-  min-width: 150px;
-  cursor: pointer;
-  transition: all 0.2s;
-  appearance: none;
-  -webkit-appearance: none;
-  -moz-appearance: none;
-  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3e%3cpath fill='%234a90e2' d='M6 9L1 4h10z'/%3e%3c/svg%3e");
-  background-repeat: no-repeat;
-  background-position: right 12px center;
-  padding-right: 40px;
-}
-
-.setting-select:focus {
-  outline: none;
-  border-color: #4a90e2;
-  background-color: rgba(0, 0, 0, 0.7);
-  box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.2);
-}
-
-.setting-select:hover {
-  border-color: rgba(255, 255, 255, 0.3);
-}
-
-.setting-select option {
-  background: #1a1a1a;
-  color: #fff;
-  padding: 8px;
-}
-
-.setting-hint {
-  color: #888;
-  font-size: 12px;
-  margin: 0;
-  font-style: italic;
-}
-
-.settings-section {
-  margin-bottom: 24px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.03);
-  overflow: hidden;
-}
-
-.section-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 16px;
-  background: rgba(74, 144, 226, 0.1);
-  cursor: pointer;
-  user-select: none;
-  transition: background 0.2s;
-}
-
-.section-header:hover {
-  background: rgba(74, 144, 226, 0.15);
-}
-
-.section-header h3 {
-  color: #4a90e2;
-  font-size: 18px;
-  font-weight: 600;
-  margin: 0;
-}
-
-.toggle-icon {
-  color: #4a90e2;
-  font-size: 14px;
-}
-
-.section-content {
-  padding: 16px;
-}
-
 .channel-group {
-  margin-bottom: 24px;
-  padding: 16px;
-  background: rgba(0, 0, 0, 0.3);
-  border-radius: 6px;
-  border: 1px solid rgba(255, 255, 255, 0.05);
-}
-
-.channel-group h4 {
-  color: #6aa0f2;
-  font-size: 16px;
-  font-weight: 600;
-  margin: 0 0 16px 0;
-  padding-bottom: 8px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 12px;
 }
 
 .controls-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  gap: 10px;
 }
 
 .control-row {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 5px;
+  min-width: 0;
 }
 
 .control-row.highlight {
-  background: rgba(74, 144, 226, 0.1);
-  padding: 8px;
-  border-radius: 4px;
-  border: 1px solid rgba(74, 144, 226, 0.3);
+  padding-left: 8px;
+  border-left: 2px solid var(--serigrafia-2);
 }
 
 .control-row label {
-  color: #ccc;
-  font-size: 12px;
-  font-weight: 600;
+  font: 700 11px/1 var(--f-panel);
+  letter-spacing: 0.12em;
   text-transform: uppercase;
+  color: var(--serigrafia-2);
 }
 
 .cc-input {
-  background: rgba(0, 0, 0, 0.5);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 4px;
-  padding: 8px;
-  color: #fff;
-  font-size: 14px;
-  font-weight: 600;
-  transition: all 0.2s;
+  height: 32px;
+  width: 100%;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 5px;
+  background: var(--hundido);
+  box-shadow: var(--hueco);
+  color: var(--serigrafia);
+  font: 500 13px/1 var(--f-datos);
+  font-variant-numeric: tabular-nums;
 }
 
-.cc-input:focus {
-  outline: none;
-  border-color: #4a90e2;
-  background: rgba(0, 0, 0, 0.7);
+.cc-input:hover:not(:disabled) {
+  box-shadow: var(--hueco), 0 0 0 1px var(--linea);
 }
 
-.cc-input:hover {
-  border-color: rgba(255, 255, 255, 0.3);
+.cc-input:focus-visible {
+  outline: 2px solid var(--vfd);
+  outline-offset: 2px;
 }
 
-/* Sound pads: one row per pad, laid out like the official ZOOM L6 Editor. Controls reuse the
-   existing .setting-select / .control-row styles; rows match the Device Settings rows. */
-.pad-settings-hint {
-  margin-bottom: 12px;
-}
-
+/* Sound pads: one row per pad, laid out like the official ZOOM L6 Editor. */
 .pad-settings {
   display: flex;
   flex-direction: column;
   gap: 10px;
-  margin: 12px 0;
 }
 
 .pad-settings-row {
   display: grid;
-  grid-template-columns: 48px repeat(4, minmax(0, 1fr));
+  grid-template-columns: 46px repeat(4, minmax(0, 1fr));
   /* Top-align so every field label shares one line, whatever sits under it. */
   align-items: start;
-  gap: 12px;
+  gap: 10px;
   padding: 10px 12px;
-  border-radius: 6px;
-  background: rgba(0, 0, 0, 0.2);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 8px;
+  background: var(--placa);
+  box-shadow: var(--relieve-1);
 }
 
 .pad-settings--clock .pad-settings-row {
-  grid-template-columns: 48px repeat(5, minmax(0, 1fr));
+  grid-template-columns: 46px repeat(5, minmax(0, 1fr));
 }
 
-/* Read-only: the file assigned on the mixer (SD card). Same box height as the selects. */
+/* Read-only: the file assigned on the mixer (SD card). Same height as the selects. */
 .pad-file-name {
-  /* Same box metrics as .setting-select so the File label lines up with the dropdown labels. */
   display: block;
-  padding: 10px 0;
-  border: 1px solid transparent;
-  color: #fff;
-  font-size: 16px;
-  font-weight: 500;
-  line-height: normal;
+  height: 32px;
+  padding: 0 8px;
+  border-radius: 5px;
+  background: var(--hundido);
+  box-shadow: var(--hueco);
+  font: 500 12.5px/32px var(--f-datos);
+  color: var(--serigrafia);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .pad-file-name--empty {
-  color: #888;
+  color: var(--inactivo);
   font-style: italic;
 }
 
@@ -1089,30 +1103,60 @@ watch(() => props.isVisible, (visible) => {
 }
 
 .pad-settings-row .setting-select:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
+  opacity: 0.45;
+  cursor: default;
 }
 
-/* Echoes the main-view pad buttons (SoundPads.vue). */
+/* Echoes the main-view pad keycaps (SoundPads.vue); white lamp lights when a file is assigned. */
 .pad-settings-badge {
   align-self: end;
-  width: 48px;
-  height: 48px;
+  width: 46px;
+  height: 46px;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  background: #2a2a2a;
-  border: 2px solid #444;
-  border-radius: 10px;
-  color: #fff;
-  font-size: 20px;
-  font-weight: 700;
+  gap: 4px;
+  border-radius: 6px;
+  background: linear-gradient(175deg, #3a3633, #2b2825);
+  box-shadow: var(--relieve-3);
+  font: 700 16px/1 var(--f-panel);
+  color: var(--serigrafia);
 }
 
-/* A file is assigned on the mixer (the official editor highlights these pads too). */
-.pad-settings-badge--assigned {
-  background: #4a90e2;
-  border-color: #4a90e2;
+.pad-settings-badge .lampara {
+  width: 7px;
+  height: 7px;
+}
+
+/* Armoniza DeviceNotice dentro de Sound Pads (sin tocar el componente compartido). */
+.advanced-settings-dialog :deep(.device-notice) {
+  margin: 0;
+  padding: 9px 12px;
+  border: 0;
+  border-left: 3px solid var(--linea);
+  border-radius: 6px;
+  background: var(--hundido);
+  box-shadow: var(--hueco);
+  font: 400 13px/1.45 var(--f-texto);
+  color: var(--serigrafia-2);
+}
+
+.advanced-settings-dialog :deep(.device-notice--subtle) {
+  padding: 0;
+  border-left: 0;
+  background: none;
+  box-shadow: none;
+  font: 400 12.5px/1.45 var(--f-texto);
+  color: var(--serigrafia-3);
+}
+
+.advanced-settings-dialog :deep(.device-notice--subtle.device-notice--warn) {
+  color: var(--ambar);
+}
+
+.advanced-settings-dialog :deep(.device-notice--subtle.device-notice--error) {
+  color: var(--rojo);
 }
 
 @media (max-width: 600px) {
@@ -1134,61 +1178,38 @@ watch(() => props.isVisible, (visible) => {
 }
 
 .dialog-footer {
+  flex: none;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 20px 24px;
-  border-top: 2px solid #333;
-  background: rgba(0, 0, 0, 0.3);
+  padding: 14px 20px;
+  background: var(--hundido);
+  box-shadow: 0 -1px 0 rgba(255, 244, 226, 0.06);
 }
 
 .action-buttons {
   display: flex;
-  gap: 12px;
+  gap: 8px;
 }
 
 .reset-button,
 .cancel-button,
 .save-button {
-  padding: 10px 20px;
-  border: none;
-  border-radius: 6px;
-  font-size: 14px;
-  font-weight: 600;
-  text-transform: uppercase;
-  cursor: pointer;
-  transition: all 0.2s ease;
+  height: 34px;
+  padding: 0 16px;
 }
 
 .reset-button {
-  background: #f44336;
-  color: white;
-}
-
-.reset-button:hover {
-  background: #d32f2f;
-  transform: translateY(-2px);
+  color: var(--rojo);
 }
 
 .cancel-button {
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  color: #ccc;
-}
-
-.cancel-button:hover {
-  background: rgba(255, 255, 255, 0.2);
-  color: #fff;
+  color: var(--serigrafia-2);
 }
 
 .save-button {
-  background: #4caf50;
-  color: white;
-}
-
-.save-button:hover {
-  background: #45a049;
-  transform: translateY(-2px);
+  color: var(--hundido);
+  background: linear-gradient(175deg, #fbf7ee, #ddd6c8);
 }
 
 /* Scrollbar styling */
@@ -1197,17 +1218,16 @@ watch(() => props.isVisible, (visible) => {
 }
 
 .dialog-content::-webkit-scrollbar-track {
-  background: rgba(0, 0, 0, 0.3);
-  border-radius: 4px;
+  background: var(--hundido);
 }
 
 .dialog-content::-webkit-scrollbar-thumb {
-  background: rgba(74, 144, 226, 0.5);
+  background: var(--placa-2);
   border-radius: 4px;
 }
 
 .dialog-content::-webkit-scrollbar-thumb:hover {
-  background: rgba(74, 144, 226, 0.7);
+  background: var(--linea);
 }
 
 /* Mobile responsive */
@@ -1216,20 +1236,20 @@ watch(() => props.isVisible, (visible) => {
     max-width: 100%;
     margin: 10px;
   }
-  
+
   .controls-grid {
     grid-template-columns: 1fr;
   }
-  
+
   .dialog-footer {
     flex-direction: column;
-    gap: 12px;
+    gap: 10px;
   }
-  
+
   .action-buttons {
     width: 100%;
   }
-  
+
   .reset-button,
   .cancel-button,
   .save-button {

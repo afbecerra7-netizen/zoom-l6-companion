@@ -122,6 +122,17 @@ const showNumberInput = computed(() => !hasSpecialValues.value || specialSelectV
 <template>
   <div class="device-param-field" :class="{ 'device-param-field--disabled': disabled }">
     <div class="device-param-field__label-row">
+      <i
+        class="lampara status-dot"
+        :class="{
+          blanco: paramStatus === 'idle',
+          verde: paramStatus === 'ok',
+          rojo: paramStatus === 'error',
+          on: paramStatus !== 'idle',
+          'status-dot--busy': paramStatus === 'reading' || paramStatus === 'writing',
+        }"
+        :title="statusTitle"
+      ></i>
       <label class="device-param-field__label" :title="def.description">
         {{ displayLabel }}
         <span
@@ -130,11 +141,6 @@ const showNumberInput = computed(() => !hasSpecialValues.value || specialSelectV
           title="Not yet verified against real hardware"
         >experimental</span>
       </label>
-      <span
-        class="status-dot"
-        :class="`status-dot--${paramStatus}`"
-        :title="statusTitle"
-      ></span>
     </div>
 
     <div class="device-param-field__control">
@@ -158,11 +164,13 @@ const showNumberInput = computed(() => !hasSpecialValues.value || specialSelectV
       <button
         v-else-if="def.encoding.kind === 'bool'"
         type="button"
-        class="toggle-button"
-        :class="{ active: value === 1 }"
+        class="tecla toggle-button"
+        :class="{ on: value === 1 }"
+        :aria-pressed="value === 1"
         :disabled="disabled"
         @click="toggleBool"
       >
+        <i class="lampara blanco" aria-hidden="true"></i>
         <span class="toggle-state">{{ value === 1 ? 'ON' : 'OFF' }}</span>
       </button>
 
@@ -207,76 +215,58 @@ const showNumberInput = computed(() => !hasSpecialValues.value || specialSelectV
         <span v-if="def.range.unit" class="device-param-field__unit">{{ def.range.unit }}</span>
       </div>
     </div>
-
   </div>
 </template>
 
 <style scoped>
-/* Shared control look: copied from AdvancedSettings.vue (its styles are scoped, so they don't
-   reach into this child component). Keep in sync with .setting-select / .cc-input there. */
+/* Shared sunken control look: kept in sync with AdvancedSettings.vue and MidiConnection.vue. */
 .setting-select {
-  background: rgba(0, 0, 0, 0.5);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 6px;
-  padding: 10px 16px;
-  color: #fff;
-  font-size: 16px;
-  font-weight: 500;
-  min-width: 150px;
+  height: 32px;
+  min-width: 156px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 5px;
+  background: var(--hundido);
+  box-shadow: var(--hueco);
+  color: var(--serigrafia);
+  font: 500 13px/1 var(--f-datos);
+  font-variant-numeric: tabular-nums;
   cursor: pointer;
-  transition: all 0.2s;
-  appearance: none;
-  -webkit-appearance: none;
-  -moz-appearance: none;
-  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3e%3cpath fill='%234a90e2' d='M6 9L1 4h10z'/%3e%3c/svg%3e");
-  background-repeat: no-repeat;
-  background-position: right 12px center;
-  padding-right: 40px;
 }
 
-.setting-select:focus {
-  outline: none;
-  border-color: #4a90e2;
-  background-color: rgba(0, 0, 0, 0.7);
-  box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.2);
+.setting-select:hover:not(:disabled) {
+  box-shadow: var(--hueco), 0 0 0 1px var(--linea);
 }
 
-.setting-select:hover {
-  border-color: rgba(255, 255, 255, 0.3);
+.setting-select:focus-visible {
+  outline: 2px solid var(--vfd);
+  outline-offset: 2px;
 }
 
 .setting-select option {
-  background: #1a1a1a;
-  color: #fff;
-  padding: 8px;
+  background: var(--chasis);
+  color: var(--serigrafia);
 }
 
 .cc-input {
-  background: rgba(0, 0, 0, 0.5);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 4px;
-  padding: 8px;
-  color: #fff;
-  font-size: 14px;
-  font-weight: 600;
-  transition: all 0.2s;
+  height: 32px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 5px;
+  background: var(--hundido);
+  box-shadow: var(--hueco);
+  color: var(--serigrafia);
+  font: 500 13px/1 var(--f-datos);
+  font-variant-numeric: tabular-nums;
 }
 
-.cc-input:focus {
-  outline: none;
-  border-color: #4a90e2;
-  background: rgba(0, 0, 0, 0.7);
+.cc-input:hover:not(:disabled) {
+  box-shadow: var(--hueco), 0 0 0 1px var(--linea);
 }
 
-.cc-input:hover {
-  border-color: rgba(255, 255, 255, 0.3);
-}
-
-.setting-hint {
-  color: #888;
-  font-size: 12px;
-  margin: 0;
-  font-style: italic;
+.cc-input:focus-visible {
+  outline: 2px solid var(--vfd);
+  outline-offset: 2px;
 }
 
 .device-param-field {
@@ -284,15 +274,15 @@ const showNumberInput = computed(() => !hasSpecialValues.value || specialSelectV
   align-items: center;
   justify-content: space-between;
   flex-wrap: wrap;
-  gap: 6px 12px;
-  padding: 8px 10px;
+  gap: 8px 12px;
+  padding: 7px 10px;
   border-radius: 6px;
-  background: rgba(0, 0, 0, 0.2);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: var(--chasis);
+  border: 1px solid var(--linea);
 }
 
 .device-param-field--disabled {
-  opacity: 0.75;
+  opacity: 0.65;
 }
 
 .device-param-field__label-row {
@@ -303,11 +293,10 @@ const showNumberInput = computed(() => !hasSpecialValues.value || specialSelectV
 }
 
 .device-param-field__label {
-  color: #ccc;
-  font-size: 12px;
-  font-weight: 600;
+  font: 700 12px/1.2 var(--f-panel);
+  letter-spacing: 0.12em;
   text-transform: uppercase;
-  letter-spacing: 0.3px;
+  color: var(--serigrafia-2);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -316,39 +305,26 @@ const showNumberInput = computed(() => !hasSpecialValues.value || specialSelectV
 .experimental-badge {
   display: inline-block;
   margin-left: 6px;
-  padding: 1px 5px;
-  font-size: 9px;
-  font-weight: 700;
+  padding: 2px 5px;
+  font: 700 9.5px/1 var(--f-panel);
+  letter-spacing: 0.12em;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
-  color: #ff9800;
-  border: 1px solid #ff9800;
+  color: var(--ambar);
+  border: 1px solid var(--ambar);
   border-radius: 3px;
   vertical-align: middle;
   white-space: nowrap;
 }
 
+/* leyendo o escribiendo: VFD; ok: verde; error: rojo; reposo: lámpara apagada */
 .status-dot {
   width: 8px;
   height: 8px;
-  border-radius: 50%;
-  background: #666;
-  flex-shrink: 0;
 }
 
-.status-dot--reading,
-.status-dot--writing {
-  background: #4a90e2;
-  box-shadow: 0 0 4px rgba(74, 144, 226, 0.8);
-}
-
-.status-dot--ok {
-  background: #4caf50;
-}
-
-.status-dot--error {
-  background: #f44336;
-  box-shadow: 0 0 4px rgba(244, 67, 54, 0.7);
+.status-dot--busy {
+  --on: var(--vfd);
+  --off: var(--blanco-off);
 }
 
 .device-param-field__control {
@@ -359,11 +335,14 @@ const showNumberInput = computed(() => !hasSpecialValues.value || specialSelectV
 }
 
 .device-param-field__value {
-  color: #999;
-  font-size: 13px;
-  font-weight: 600;
+  padding: 5px 9px;
+  border-radius: 4px;
+  background: var(--hundido);
+  box-shadow: var(--hueco);
+  font: 500 12.5px/1 var(--f-datos);
+  font-variant-numeric: tabular-nums;
+  color: var(--serigrafia-2);
 }
-
 
 .device-param-field__numeric {
   display: flex;
@@ -372,46 +351,23 @@ const showNumberInput = computed(() => !hasSpecialValues.value || specialSelectV
 }
 
 .device-param-field__number {
-  width: 80px;
+  width: 84px;
 }
 
 .device-param-field__unit {
-  color: #888;
-  font-size: 11px;
-  font-weight: 600;
+  font: 500 11.5px/1 var(--f-datos);
+  color: var(--serigrafia-3);
 }
 
-.device-param-field .toggle-button {
-  width: 50px;
-  height: 28px;
-  background: #1a1a1a;
-  border: 2px solid #4a4a4a;
-  border-radius: 14px;
-  color: #ccc;
-  font-size: 9px;
-  font-weight: bold;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+.toggle-button {
+  min-width: 68px;
+  height: 30px;
 }
 
-.device-param-field .toggle-button.active {
-  background: #4a90e2;
-  border-color: #4a90e2;
-  color: white;
-}
-
-.device-param-field .toggle-button:hover:not(:disabled) {
-  border-color: #6aa0f2;
-}
-
-.device-param-field .toggle-button:disabled,
 .device-param-field__select:disabled,
 .device-param-field__number:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
+  opacity: 0.45;
+  cursor: default;
 }
 
 @media (max-width: 480px) {

@@ -250,17 +250,31 @@ onUnmounted(() => {
 <template>
   <div class="device-settings-panel">
     <!-- Editor link (SysEx session) -->
-    <div class="editor-link">
+    <div class="grupo editor-link">
       <div class="editor-link-row">
-        <label class="editor-link-toggle">
-          <input type="checkbox" v-model="linkEnabled" />
+        <label class="tecla editor-link-toggle" :class="{ on: linkEnabled }">
+          <input type="checkbox" v-model="linkEnabled" class="sr-only" />
+          <i class="lampara blanco" aria-hidden="true"></i>
           <span>Editor link</span>
         </label>
-        <span class="link-pill" :class="`link-pill--${linkTone}`">
-          {{ linkLabel }}
-          <template v-if="linkOpen && deviceSettings.firmware.value">
-            · fw {{ deviceSettings.firmware.value }}
-          </template>
+        <span class="link-status" :class="`link-status--${linkTone}`">
+          <i
+            class="lampara"
+            :class="{
+              verde: linkTone === 'success',
+              ambar: linkTone === 'warn',
+              rojo: linkTone === 'error',
+              blanco: linkTone === 'idle',
+              on: linkTone !== 'idle',
+            }"
+            aria-hidden="true"
+          ></i>
+          <span>
+            {{ linkLabel }}
+            <template v-if="linkOpen && deviceSettings.firmware.value">
+              · fw {{ deviceSettings.firmware.value }}
+            </template>
+          </span>
         </span>
       </div>
       <p class="setting-hint">
@@ -276,10 +290,8 @@ onUnmounted(() => {
     <DeviceNotice v-if="linkMessage" subtle variant="warn" :text="linkMessage" />
 
     <!-- MIDI -->
-    <section v-if="midiIds.length" class="device-settings-group">
-      <div class="device-settings-group__header">
-        <h4>MIDI</h4>
-      </div>
+    <section v-if="midiIds.length" class="grupo device-settings-group">
+      <h4 class="t-rotulo">MIDI</h4>
       <div class="param-list">
         <DeviceParamField
           v-for="id in midiIds"
@@ -289,20 +301,18 @@ onUnmounted(() => {
           @update:model-value="(channel: number) => emit('update:midiChannel', channel)"
         />
       </div>
-      <p v-if="midiIds.includes('midiChannel')" class="setting-hint midi-channel-hint">
+      <p v-if="midiIds.includes('midiChannel')" class="setting-hint">
         MIDI Channel is shared by the app and the mixer: the mixer updates immediately and all app
         controls switch on Save. Cancel puts the mixer's channel back.
       </p>
     </section>
 
     <!-- Power -->
-    <section v-if="powerIds.length" class="device-settings-group">
-      <div class="device-settings-group__header">
-        <h4>Power</h4>
-      </div>
+    <section v-if="powerIds.length" class="grupo device-settings-group">
+      <h4 class="t-rotulo">Power</h4>
       <div class="param-list">
         <DeviceParamField
-          v-for="(id, idx) in powerIds"
+          v-for="id in powerIds"
           :key="id"
           :param-id="id"
         />
@@ -310,13 +320,11 @@ onUnmounted(() => {
     </section>
 
     <!-- Recorder -->
-    <section v-if="recorderIds.length" class="device-settings-group">
-      <div class="device-settings-group__header">
-        <h4>Recorder</h4>
-      </div>
+    <section v-if="recorderIds.length" class="grupo device-settings-group">
+      <h4 class="t-rotulo">Recorder</h4>
       <div class="param-list">
         <DeviceParamField
-          v-for="(id, idx) in recorderIds"
+          v-for="id in recorderIds"
           :key="id"
           :param-id="id"
         />
@@ -324,12 +332,10 @@ onUnmounted(() => {
     </section>
 
     <!-- System info -->
-    <section class="device-settings-group">
-      <div class="device-settings-group__header">
-        <h4>System info</h4>
-      </div>
+    <section class="grupo device-settings-group">
+      <h4 class="t-rotulo">System info</h4>
       <div class="param-list">
-        <div class="device-param-field device-param-field--static">
+        <div class="device-param-field--static">
           <div class="device-param-field__label-row">
             <label class="device-param-field__label">Firmware</label>
           </div>
@@ -341,13 +347,11 @@ onUnmounted(() => {
     </section>
 
     <!-- L6max routing / USB -->
-    <section v-if="showL6MaxGroup" class="device-settings-group">
-      <div class="device-settings-group__header">
-        <h4>L6max routing / USB</h4>
-      </div>
+    <section v-if="showL6MaxGroup" class="grupo device-settings-group">
+      <h4 class="t-rotulo">L6max routing / USB</h4>
       <div class="param-list">
         <DeviceParamField
-          v-for="(id, idx) in l6MaxIds"
+          v-for="id in l6MaxIds"
           :key="id"
           :param-id="id"
         />
@@ -355,12 +359,10 @@ onUnmounted(() => {
     </section>
 
     <!-- AUX send points -->
-    <section v-if="showAuxGroup" class="device-settings-group">
-      <div class="device-settings-group__header">
-        <h4>AUX send points</h4>
-      </div>
+    <section v-if="showAuxGroup" class="grupo device-settings-group">
+      <h4 class="t-rotulo">AUX send points</h4>
       <div class="param-grid param-grid--2col">
-        <template v-for="(row, idx) in auxRows" :key="row.ch">
+        <template v-for="row in auxRows" :key="row.ch">
           <DeviceParamField
             v-if="row.aux1Id"
             :param-id="row.aux1Id"
@@ -373,12 +375,9 @@ onUnmounted(() => {
       </div>
     </section>
 
-
     <!-- USB mass storage -->
-    <section class="device-settings-group">
-      <div class="device-settings-group__header">
-        <h4>USB mass storage</h4>
-      </div>
+    <section class="grupo device-settings-group">
+      <h4 class="t-rotulo">USB mass storage</h4>
       <p class="mass-storage-intro">
         Toggle USB file transfer (SD card as a drive). The device will disconnect and re-enumerate on USB when you switch modes. If it gets stuck try ejecting the device on the host or disable from the official Zoom L6 app.
       </p>
@@ -399,7 +398,7 @@ onUnmounted(() => {
       <div class="mass-storage-actions">
         <button
           type="button"
-          class="mass-storage-button mass-storage-button--on"
+          class="tecla mass-storage-button mass-storage-button--on"
           :disabled="massStorageButtonsLocked || !massStorageOutReady || !sysexReady"
           @click="applyMassStorage(true)"
         >
@@ -407,7 +406,7 @@ onUnmounted(() => {
         </button>
         <button
           type="button"
-          class="mass-storage-button mass-storage-button--off"
+          class="tecla mass-storage-button"
           :disabled="massStorageButtonsLocked || !massStorageOutReady || !sysexReady"
           @click="applyMassStorage(false)"
         >
@@ -427,30 +426,17 @@ onUnmounted(() => {
 .device-settings-panel {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 12px;
 }
 
 .setting-hint {
-  color: #888;
-  font-size: 12px;
   margin: 0;
-  font-style: italic;
+  font: 400 12.5px/1.45 var(--f-texto);
+  color: var(--serigrafia-3);
 }
 
-.midi-channel-hint {
-  margin-top: 8px;
-}
-
-/* Editor link + mass storage: moved verbatim from AdvancedSettings' old "Non-MIDI" section. */
 .editor-link {
-  background: rgba(0, 0, 0, 0.3);
-  border: 1px solid rgba(74, 144, 226, 0.3);
-  border-radius: 6px;
   padding: 12px;
-  margin-bottom: 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
 }
 
 .editor-link-row {
@@ -458,143 +444,73 @@ onUnmounted(() => {
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: 10px;
 }
 
 .editor-link-toggle {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-height: 32px;
-  color: #ccc;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
+  position: relative;
+  height: 32px;
+  padding: 0 12px;
   user-select: none;
 }
 
-.editor-link-toggle input {
-  width: 18px;
-  height: 18px;
-  accent-color: #4a90e2;
-  cursor: pointer;
+.editor-link-toggle:has(input:focus-visible) {
+  outline: 2px solid var(--vfd);
+  outline-offset: 2px;
 }
 
-.editor-link-toggle--secondary {
-  font-weight: 500;
-  color: #bbb;
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
-.link-pill {
-  font-size: 11px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  padding: 4px 10px;
-  border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  background: rgba(255, 255, 255, 0.06);
-  color: #ccc;
+.link-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 30px;
+  padding: 0 10px;
+  border-radius: 5px;
+  background: var(--hundido);
+  box-shadow: var(--hueco);
+  font: 500 12px/1 var(--f-datos);
+  font-variant-numeric: tabular-nums;
+  color: var(--serigrafia-2);
   white-space: nowrap;
 }
 
-.link-pill--success {
-  border-color: rgba(76, 175, 80, 0.5);
-  background: rgba(76, 175, 80, 0.15);
-  color: #a5d6a7;
+.link-status--success {
+  color: var(--serigrafia);
 }
 
-.link-pill--warn {
-  border-color: rgba(255, 152, 0, 0.5);
-  background: rgba(255, 152, 0, 0.12);
-  color: #ffcc80;
+.link-status--warn {
+  color: var(--ambar);
 }
 
-.link-pill--error {
-  border-color: rgba(244, 67, 54, 0.5);
-  background: rgba(244, 67, 54, 0.12);
-  color: #ffcdd2;
-}
-
-.mass-storage-intro {
-  color: #bbb;
-  font-size: 13px;
-  line-height: 1.5;
-  margin: 0 0 12px 0;
-}
-
-.mass-storage-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  margin: 12px 0;
-}
-
-.mass-storage-button {
-  padding: 10px 18px;
-  border: none;
-  border-radius: 6px;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: opacity 0.2s ease, transform 0.2s ease;
-}
-
-.mass-storage-button:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
-  transform: none;
-}
-
-.mass-storage-button--on {
-  background: #2e7d32;
-  color: #fff;
-}
-
-.mass-storage-button--on:not(:disabled):hover {
-  background: #1b5e20;
-}
-
-.mass-storage-button--off {
-  background: rgba(255, 255, 255, 0.12);
-  color: #e0e0e0;
-  border: 1px solid rgba(255, 255, 255, 0.25);
-}
-
-.mass-storage-button--off:not(:disabled):hover {
-  background: rgba(255, 255, 255, 0.18);
+.link-status--error {
+  color: var(--rojo);
 }
 
 .device-settings-group {
-  margin-bottom: 20px;
-}
-
-.device-settings-group__header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 10px;
-}
-
-.device-settings-group__header h4 {
-  color: #6aa0f2;
-  font-size: 14px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.4px;
-  margin: 0;
+  padding: 12px;
 }
 
 .param-list {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
 
 .param-grid {
   display: grid;
-  gap: 8px;
+  gap: 6px;
 }
 
 .param-grid--2col {
@@ -610,24 +526,107 @@ onUnmounted(() => {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 8px 10px;
+  padding: 7px 10px;
   border-radius: 6px;
-  background: rgba(0, 0, 0, 0.2);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: var(--chasis);
+  border: 1px solid var(--linea);
 }
 
 .device-param-field--static .device-param-field__label {
-  color: #ccc;
-  font-size: 12px;
-  font-weight: 600;
+  font: 700 12px/1.2 var(--f-panel);
+  letter-spacing: 0.12em;
   text-transform: uppercase;
-  letter-spacing: 0.3px;
+  color: var(--serigrafia-2);
 }
 
 .device-param-field--static .device-param-field__value {
-  color: #999;
-  font-size: 13px;
-  font-weight: 600;
+  padding: 5px 9px;
+  border-radius: 4px;
+  background: var(--hundido);
+  box-shadow: var(--hueco);
+  font: 500 12.5px/1 var(--f-datos);
+  font-variant-numeric: tabular-nums;
+  color: var(--serigrafia-2);
+}
+
+.mass-storage-intro {
+  margin: 0;
+  font: 400 13px/1.45 var(--f-texto);
+  color: var(--serigrafia-2);
+}
+
+.mass-storage-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.mass-storage-button {
+  height: 32px;
+  padding: 0 14px;
+}
+
+.mass-storage-button--on {
+  color: var(--hundido);
+  background: linear-gradient(175deg, #fbf7ee, #ddd6c8);
+}
+
+/* Armoniza DeviceNotice (sin tocar el componente compartido) con los tokens de TAPE 101. */
+.device-settings-panel :deep(.device-notice) {
+  margin: 0;
+  padding: 9px 12px;
+  border: 0;
+  border-left: 3px solid var(--linea);
+  border-radius: 6px;
+  background: var(--hundido);
+  box-shadow: var(--hueco);
+  font: 400 13px/1.45 var(--f-texto);
+  color: var(--serigrafia-2);
+}
+
+.device-settings-panel :deep(.device-notice--info) {
+  border-left-color: var(--serigrafia-3);
+  color: var(--serigrafia-2);
+}
+
+.device-settings-panel :deep(.device-notice--success) {
+  border-left-color: var(--verde);
+  color: var(--verde);
+}
+
+.device-settings-panel :deep(.device-notice--warn) {
+  border-left-color: var(--ambar);
+  color: var(--ambar);
+}
+
+.device-settings-panel :deep(.device-notice--error) {
+  border-left-color: var(--rojo);
+  color: var(--rojo);
+}
+
+.device-settings-panel :deep(.device-notice--subtle) {
+  padding: 0;
+  border-left: 0;
+  background: none;
+  box-shadow: none;
+  font: 400 12.5px/1.45 var(--f-texto);
+  color: var(--serigrafia-3);
+}
+
+.device-settings-panel :deep(.device-notice--subtle.device-notice--info) {
+  color: var(--serigrafia-3);
+}
+
+.device-settings-panel :deep(.device-notice--subtle.device-notice--warn) {
+  color: var(--ambar);
+}
+
+.device-settings-panel :deep(.device-notice--subtle.device-notice--error) {
+  color: var(--rojo);
+}
+
+.device-settings-panel :deep(.device-notice--subtle.device-notice--success) {
+  color: var(--verde);
 }
 
 @media (max-width: 480px) {
@@ -637,10 +636,6 @@ onUnmounted(() => {
 
   .param-grid__spacer {
     display: none;
-  }
-
-  .device-settings-group__header {
-    flex-wrap: wrap;
   }
 }
 </style>
