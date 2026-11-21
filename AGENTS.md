@@ -37,7 +37,11 @@ There is no linter. `type-check` and `test` must both stay green.
 ## This fork
 
 A fork of [philmillman/zoom-l6-companion](https://github.com/philmillman/zoom-l6-companion)
-(MIT) for one studio's **Zoom L6max**, run as a Mac app. It sends nothing back upstream.
+(MIT) for one studio's **Zoom L6max**, run as a Mac app called **MESA 101** (the mixing desk of
+the TAPE 101 family). It sends nothing back upstream. The icon is `assets/icono/mesa101.svg`;
+`mesa101.icns` and `mesa101-512.png` are generated from it with `rsvg-convert` and `iconutil`.
+The app keeps its data in the `zoom-l6-companion` folder whatever its visible name:
+`electron/main.cjs` pins it, so renaming never loses the saved tapes, language or mappings.
 
 | Branch | What it is |
 | --- | --- |

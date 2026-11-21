@@ -1,0 +1,67 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <!-- MESA 101: un fader de aluminio sobre chasis grafito y una sola lámpara que informa.
+       Paleta de TAPE 101 (src/assets/tape101.css): chasis, placa, linea, serigrafia, ambar. -->
+  <defs>
+    <linearGradient id="chasis" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2e2a27"/>
+      <stop offset="1" stop-color="#171513"/>
+    </linearGradient>
+    <linearGradient id="ranura" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#050404"/>
+      <stop offset="0.5" stop-color="#121110"/>
+      <stop offset="1" stop-color="#050404"/>
+    </linearGradient>
+    <linearGradient id="aluminio" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#fbf7ee"/>
+      <stop offset="0.45" stop-color="#d9d2c4"/>
+      <stop offset="0.55" stop-color="#b9b1a2"/>
+      <stop offset="1" stop-color="#e8e2d5"/>
+    </linearGradient>
+    <radialGradient id="luz" cx="0.4" cy="0.35" r="0.65">
+      <stop offset="0" stop-color="#fff4dc"/>
+      <stop offset="0.45" stop-color="#ffb23e"/>
+      <stop offset="1" stop-color="#e08a12"/>
+    </radialGradient>
+    <radialGradient id="halo" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#ffb23e" stop-opacity="0.55"/>
+      <stop offset="1" stop-color="#ffb23e" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="sombra" x="-20%" y="-20%" width="140%" height="160%">
+      <feDropShadow dx="0" dy="14" stdDeviation="14" flood-color="#000" flood-opacity="0.55"/>
+    </filter>
+  </defs>
+
+  <!-- chasis: la placa redondeada de los iconos de macOS (824 de 1024, margen de 100) -->
+  <rect x="100" y="100" width="824" height="824" rx="185" fill="url(#chasis)"/>
+  <rect x="101.5" y="101.5" width="821" height="821" rx="183.5" fill="none" stroke="#fff4e2" stroke-opacity="0.10" stroke-width="3"/>
+
+  <!-- escala serigrafiada -->
+  <g stroke="#a9a194" stroke-width="7" stroke-linecap="round">
+    <line x1="330" y1="250" x2="380" y2="250"/>
+    <line x1="345" y1="350" x2="380" y2="350"/>
+    <line x1="330" y1="450" x2="380" y2="450"/>
+    <line x1="345" y1="550" x2="380" y2="550"/>
+    <line x1="330" y1="650" x2="380" y2="650"/>
+    <line x1="345" y1="750" x2="380" y2="750"/>
+  </g>
+
+  <!-- ranura del fader -->
+  <rect x="436" y="210" width="44" height="600" rx="22" fill="url(#ranura)"/>
+  <rect x="436" y="210" width="44" height="600" rx="22" fill="none" stroke="#000" stroke-opacity="0.6" stroke-width="3"/>
+
+  <!-- tapa del fader, de aluminio -->
+  <g filter="url(#sombra)">
+    <rect x="348" y="452" width="220" height="112" rx="16" fill="url(#aluminio)"/>
+  </g>
+  <rect x="348" y="452" width="220" height="112" rx="16" fill="none" stroke="#fff" stroke-opacity="0.35" stroke-width="3"/>
+  <rect x="364" y="505" width="188" height="7" rx="3.5" fill="#3a3532" fill-opacity="0.75"/>
+
+  <!-- la única luz: ámbar -->
+  <circle cx="702" cy="300" r="120" fill="url(#halo)"/>
+  <circle cx="702" cy="300" r="54" fill="url(#luz)"/>
+  <circle cx="702" cy="300" r="54" fill="none" stroke="#000" stroke-opacity="0.45" stroke-width="4"/>
+
+  <!-- rótulo -->
+  <text x="702" y="770" text-anchor="middle" font-family="Barlow Condensed, Avenir Next Condensed, Helvetica Neue, Arial Narrow, sans-serif"
+        font-weight="700" font-size="118" letter-spacing="6" fill="#ece6da">101</text>
+</svg>

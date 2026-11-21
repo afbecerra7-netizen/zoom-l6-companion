@@ -17,7 +17,7 @@
     "decode": "tsx scripts/decode-capture.ts",
     "build:app": "vite build --base ./",
     "app": "vite build --base ./ && electron .",
-    "package:mac": "vite build --base ./ && electron-packager . \"Zoom L6\" --platform=darwin --arch=arm64 --out=release --overwrite --app-bundle-id=co.afbecerra.zoom-l6 --ignore=\"^/(src|docs|images|scripts|public|release|maqueta|\\.github|\\.vscode|\\.claude)($|/)\""
+    "package:mac": "vite build --base ./ && electron-packager . \"MESA 101\" --platform=darwin --arch=arm64 --out=release --overwrite --app-bundle-id=co.afbecerra.zoom-l6 --icon=assets/icono/mesa101.icns --ignore=\"^/(src|docs|images|scripts|public|release|maqueta|\\.github|\\.vscode|\\.claude)($|/)\""
   },
   "dependencies": {
     "vue": "^3.5.22",

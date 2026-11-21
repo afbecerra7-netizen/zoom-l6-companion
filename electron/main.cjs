@@ -1,4 +1,4 @@
-// App de Mac para Zoom L6 Companion.
+// MESA 101: la app de Mac para la Zoom L6max, de la familia TAPE 101.
 //
 // Electron trae el motor de Chrome, asi que WebMIDI funciona igual que en el
 // navegador. Ojo: Electron CONCEDE TODOS LOS PERMISOS por defecto (comprobado:
@@ -10,6 +10,13 @@ const { app, BrowserWindow, session } = require('electron')
 const path = require('node:path')
 
 const PERMITIDOS = new Set(['midi', 'midiSysex'])
+
+// El nombre visible es MESA 101, pero los datos (cintas rotuladas, idioma, asignaciones) viven en
+// la carpeta que Electron saca del nombre del paquete, «zoom-l6-companion». Se fija aquí, antes de
+// cambiar el nombre, para que renombrar la app no la deje vacía.
+app.setPath('userData', path.join(app.getPath('appData'), 'zoom-l6-companion'))
+app.setName('MESA 101')
+const ICONO = path.join(__dirname, '..', 'assets', 'icono', 'mesa101-512.png')
 
 // `ZOOM_L6_AUTOCOMPROBAR=1 npx electron .` abre la app en una ventana oculta,
 // pide WebMIDI con SysEx como lo hace la app, imprime lo que ve y se cierra.
@@ -24,7 +31,7 @@ function crearVentana() {
     minHeight: 600,
     backgroundColor: '#111111',
     show: !AUTOCOMPROBAR,
-    title: 'Zoom L6',
+    title: 'MESA 101',
     webPreferences: { contextIsolation: true, sandbox: true },
   })
   if (process.env.VITE_DEV_SERVER_URL) {
@@ -51,6 +58,8 @@ function crearVentana() {
 }
 
 app.whenReady().then(() => {
+  // Empaquetada, el icono lo pone el .icns; corriendo desde el repo, se lo damos al Dock.
+  if (!app.isPackaged && process.platform === 'darwin' && app.dock) app.dock.setIcon(ICONO)
   session.defaultSession.setPermissionRequestHandler((_wc, permiso, cb) => cb(PERMITIDOS.has(permiso)))
   session.defaultSession.setPermissionCheckHandler((_wc, permiso) => PERMITIDOS.has(permiso))
   crearVentana()
