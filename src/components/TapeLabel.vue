@@ -1,4 +1,5 @@
 <template>
+  <div class="cinta-bloque">
   <div class="cinta-zona">
     <div
       ref="el"
@@ -28,6 +29,20 @@
         @click="cinta.color = i"
       ></button>
     </div>
+  </div>
+  <!-- El canal MIDI del aparato, para no tener que recordar qué fader es qué canal. Solo rótulo. -->
+  <label class="cinta-midi" :class="{ vacio: !cinta.midi }">
+    <span aria-hidden="true">{{ cinta.midi ? t('tapeMidi', { n: cinta.midi }) : t('tapeMidiNone') }}</span>
+    <select
+      :value="cinta.midi ?? 0"
+      :aria-label="t('tapeMidiChannel', { n: canal })"
+      @change="alElegirMidi"
+      @keydown.stop
+    >
+      <option :value="0">{{ t('tapeMidiNoneOption') }}</option>
+      <option v-for="n in 16" :key="n" :value="n">{{ t('tapeMidi', { n }) }}</option>
+    </select>
+  </label>
   </div>
 </template>
 
@@ -89,6 +104,11 @@ function alTeclear(event: KeyboardEvent): void {
   }
 }
 
+function alElegirMidi(event: Event): void {
+  const n = Number((event.target as HTMLSelectElement).value);
+  cinta.midi = n >= 1 && n <= 16 ? n : null;
+}
+
 function alSalir(): void {
   const texto = (el.value?.textContent ?? '').trim();
   if (el.value) el.value.textContent = texto;
@@ -107,6 +127,15 @@ watch(() => cinta.color, ajusta);
 </script>
 
 <style scoped>
+.cinta-bloque { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.cinta-midi {
+  position: relative; display: inline-flex; align-items: center; height: 20px; padding: 0 8px; border-radius: 3px;
+  font: 700 10.5px/1 var(--f-panel); letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--vfd); background: #0e0d0c; box-shadow: inset 0 0 0 1px #2c2925; cursor: pointer;
+}
+.cinta-midi.vacio { color: var(--inactivo); background: transparent; box-shadow: inset 0 0 0 1px var(--inactivo); }
+.cinta-midi select { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; font-size: 14px; }
+.cinta-midi:focus-within { outline: 2px solid var(--vfd); outline-offset: 2px; }
 .cinta-zona { position: relative; height: 40px; display: flex; align-items: center; justify-content: center; }
 .cinta {
   --tela: #efece4; position: relative; isolation: isolate; max-width: 100%; min-width: 64px; padding: 6px 12px 5px;

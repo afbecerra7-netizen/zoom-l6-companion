@@ -6,6 +6,11 @@ export interface Cinta {
   texto: string;
   /** Índice en TELAS. */
   color: number;
+  /**
+   * Canal MIDI (1–16) del aparato que suena en este canal de la mezcladora, escrito a mano bajo la
+   * cinta. Es solo un rótulo: la app no manda nada por él. Ausente o null = sin anotar.
+   */
+  midi?: number | null;
 }
 
 /** Colores de cinta gaffer. */
