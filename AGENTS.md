@@ -65,7 +65,8 @@ What the fork adds:
 - **An end-to-end test against a simulated mixer**: `PYTHON=/path/to/python sh scripts/e2e/correr.sh`
   (that Python needs `mido` and `python-rtmidi`). It opens two virtual MIDI ports with the
   Zoom's port name, drives the console and checks the 19 messages that reach the mixer.
-  It does not replace the real device.
+  It does not replace the real device, and **it refuses to run while a real mixer is plugged in**:
+  Auto-Connect could pick the real port and send it levels, the compressor and a scene.
 
 Rules on top of the upstream ones:
 

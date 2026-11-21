@@ -11,6 +11,12 @@
 set -e
 cd "$(dirname "$0")/../.."
 PYTHON="${PYTHON:-python3}"
+# Con una Zoom de verdad conectada, Auto-Connect puede elegir SU puerto («L6max Mixer Control
+# Port») en vez del simulado, y la prueba le mandaría a la mezcladora real niveles, el compresor y
+# una escena. Pasó a punto de correrse con la L6max enchufada (2026-11-21): se niega.
+if "$PYTHON" -c "import mido, sys; sys.exit(any('Mixer Control' in n for n in mido.get_output_names()))"; then :; else
+  echo "Hay un puerto «Mixer Control» de verdad conectado. Desconecta la Zoom antes de esta prueba."; exit 2
+fi
 TMP="$(mktemp -d)"
 npx vite build --base ./ --logLevel error
 "$PYTHON" scripts/e2e/zoom_falsa.py "$TMP/midi.json" 30 > "$TMP/zoom.out" 2>&1 &
