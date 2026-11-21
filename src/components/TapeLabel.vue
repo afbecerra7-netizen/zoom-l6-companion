@@ -10,7 +10,7 @@
       spellcheck="false"
       role="textbox"
       :aria-label="t('tapeChannel', { n: canal })"
-      :style="{ '--giro': giro + 'deg', '--tela': TELAS[cinta.color] }"
+      :style="{ '--giro': giro + 'deg', '--tela': tela, '--tinta': tintaPara(tela) }"
       @focus="alEnfocar"
       @blur="alSalir"
       @beforeinput="antesDeEscribir"
@@ -24,7 +24,8 @@
         type="button"
         :class="{ on: i === cinta.color }"
         :style="{ background: tela }"
-        :aria-label="t('tapeColor', { n: i + 1 })"
+        :aria-label="t('tapeColor', { n: TELA_NOMBRES[i] ?? i + 1 })"
+        :title="TELA_NOMBRES[i]"
         @pointerdown.prevent
         @click="cinta.color = i"
       ></button>
@@ -50,7 +51,7 @@
 import { t } from '../i18n';
 // Cinta gaffer con rotulador: el nombre de lo que va en el canal, escrito a mano.
 import { computed, nextTick, onMounted, ref, watch } from 'vue';
-import { CINTA_MAX, TELAS, cintaDe } from '../stores/ui';
+import { CINTA_MAX, TELAS, TELA_NOMBRES, cintaDe, tintaPara } from '../stores/ui';
 
 const props = defineProps<{ canal: number }>();
 
@@ -61,6 +62,8 @@ const cinta = cintaDe(props.canal);
 const el = ref<HTMLElement | null>(null);
 const enfocada = ref(false);
 const vacia = computed(() => cinta.texto.length === 0 && !enfocada.value);
+/** La tela elegida; si el índice guardado ya no existe en la paleta, la neutra. */
+const tela = computed(() => TELAS[cinta.color] ?? TELAS[0]);
 
 /** Encoge antes de cortar el nombre: se mide el texto ya pintado, no se adivina por su largo. */
 function ajusta(): void {
@@ -140,7 +143,7 @@ watch(() => cinta.color, ajusta);
 .cinta {
   --tela: #efece4; position: relative; isolation: isolate; max-width: 100%; min-width: 64px; padding: 6px 12px 5px;
   transform: rotate(var(--giro, -1deg)); text-align: center; white-space: nowrap; overflow: hidden;
-  font: 400 18px/1.15 var(--f-mano); color: #16130f; cursor: text; user-select: text; outline: none;
+  font: 400 18px/1.15 var(--f-mano); color: var(--tinta, #16130f); cursor: text; user-select: text; outline: none;
   filter: drop-shadow(1px 1px 0.5px rgba(0, 0, 0, 0.5)) drop-shadow(2px 4px 3px rgba(0, 0, 0, 0.4));
 }
 .cinta::before { /* la tela va aparte: el borde rasgado no debe cortar la sombra */

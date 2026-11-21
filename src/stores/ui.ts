@@ -13,8 +13,30 @@ export interface Cinta {
   midi?: number | null;
 }
 
-/** Colores de cinta gaffer. */
-export const TELAS = ['#efece4', '#f4e04d', '#ff8fbd', '#ff9a3c', '#86e08a'] as const;
+/**
+ * Colores de cinta gaffer: los que Felipe usa en Ableton para cada tipo de pista (leídos de una
+ * captura de su set, 2026-11-21), más el blanco neutro. Los índices 0, 1, 2 y 4 conservan el
+ * sentido de la paleta anterior (blanco, amarillo, rosa, verde) para que las cintas ya rotuladas no
+ * cambien de familia; el 3 era naranja y nadie lo usaba.
+ */
+export const TELAS = [
+  '#efece4', // neutro
+  '#fcf15e', // BASS
+  '#f099a7', // VOX
+  '#5e4ca7', // GUITAR
+  '#77fb58', // DRUMS
+  '#6de6fc', // KEYS
+  '#b9dce9', // FX
+] as const;
+export const TELA_NOMBRES = ['neutro', 'BASS', 'VOX', 'GUITAR', 'DRUMS', 'KEYS', 'FX'] as const;
+
+/** Tinta del rotulador: negra sobre telas claras, blanca sobre las oscuras (la de GUITAR). */
+export function tintaPara(tela: string): string {
+  const n = parseInt(tela.slice(1), 16);
+  const [r, g, b] = [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+  const luz = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
+  return luz < 0.45 ? '#f5f1e8' : '#16130f';
+}
 export const CINTA_MAX = 12;
 
 const CLAVE = 'zoom-l6-cintas';

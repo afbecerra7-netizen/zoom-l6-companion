@@ -95,7 +95,7 @@ app.whenReady().then(async () => {
   exige(Number(r.arrastre.nivel3) < 100 && r.arrastre.tapaBajo === 60, 'el fader sigue al ratón: baja 60 px con 60 px de arrastre')
   exige(r.desdeMezclador.nivel2 === '33' && r.desdeMezclador.mute2 && r.desdeMezclador.comp, 'lo que manda el mezclador mueve la consola')
   exige(r.modulacion.antes === 0 && r.modulacion.enModulacion > 0 && r.modulacion.despues === 0, 'los LFO solo se ven en modo MODULACIÓN')
-  exige(r.cinta.texto === 'MINITAUR' && !r.cinta.vacia && r.cinta.colores === 5 && /"texto":"MINITAUR","color":1/.test(r.cinta.guardado || ''), 'la cinta se escribe, cambia de color y se guarda')
+  exige(r.cinta.texto === 'MINITAUR' && !r.cinta.vacia && r.cinta.colores === 7 && /"texto":"MINITAUR","color":1/.test(r.cinta.guardado || ''), 'la cinta se escribe, cambia de color y se guarda')
   for (const t of r.tamanos) exige(t.escala === t.esperada && !t.scroll && !t.desborda && t.dentro && !t.cabeceraChoca, 'sin scroll ni desbordes a ' + t.v)
   exige(errores.length === 0, 'sin errores en la consola: ' + errores.join(' | '))
 
