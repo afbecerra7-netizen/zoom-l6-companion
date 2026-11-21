@@ -141,9 +141,9 @@ const L6MAX_SLOTS: SnapshotSlot[] = [
     'mixerControlViaMidi',
     4,
     1,
-    false,
-    'unverified on the L6max: byte 4 read 00 in the morning and 01 after the app wrote 31 03 01 (= OFF on fw 1.10), '
-      + 'and the official Editor showed OFF whenever it read 01. No snapshot was taken with the setting known to be ON (2026-11-21)',
+    true,
+    'L6max fw 1.10 (2026-11-21): byte 4 read 01 with the setting OFF and 00 right after writing 31 03 00 (ON); '
+      + 'the official Editor showed OFF and then ON. Inverted like the write (see invertedOn in params.ts)',
   ),
   ...padSlots(
     { mode: 13, level: 17, note: 122 },

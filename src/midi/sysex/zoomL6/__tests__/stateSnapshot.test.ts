@@ -131,7 +131,7 @@ describe('decodeSnapshot (L6max captures)', () => {
     expect(d.layout).toBe('l6max');
     const ids = Object.keys(d.values);
     expect(ids.filter((id) => id.startsWith('pad') || id.startsWith('fx.'))).toEqual([]);
-    expect(ids.sort()).toEqual(['monitorPoint', 'subOutPoint', 'usbAudioMode']);
+    expect(ids.sort()).toEqual(['mixerControlViaMidi', 'monitorPoint', 'subOutPoint', 'usbAudioMode']);
   });
 
   it('returns the raw 94-entry CC table', () => {
@@ -248,7 +248,11 @@ describe('decodeSnapshot (L6max fw 1.10)', () => {
     expect(decodeSnapshot(payload).values.usbAudioMode).toBe(0); // 0 = 'Stereo mix'
   });
 
-  it('does not surface Mixer Control via MIDI until its byte is verified on the L6max', () => {
-    expect(decodeSnapshot(fw110Payload(fw110.multitrack)).values.mixerControlViaMidi).toBeUndefined();
+  it('reads Mixer Control via MIDI from byte 4: 01 = OFF, 00 = ON', () => {
+    const off = fw110Payload(fw110.stereo);
+    const on = fw110Payload(fw110.mixerControlOn);
+    expect([off[4], on[4]]).toEqual([0x01, 0x00]);
+    expect(decodeSnapshot(off).values.mixerControlViaMidi).toBe(0);
+    expect(decodeSnapshot(on).values.mixerControlViaMidi).toBe(1);
   });
 });
