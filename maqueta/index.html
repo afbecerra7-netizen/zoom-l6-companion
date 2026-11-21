@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Zoom L6max · maqueta</title>
+<link rel="stylesheet" href="maqueta.css">
+</head>
+<body>
+<header class="barra">
+  <div class="placa-nombre"><b>ZOOM L6max</b><span>MEZCLADOR · 8 CANALES</span></div>
+  <div class="estado"><i class="lampara blanco"></i><span>MAQUETA · no manda MIDI</span></div>
+  <div class="escenas" role="radiogroup" aria-label="Escena">
+    <span class="rotulo">ESCENA</span>
+    <button class="tecla tecla-escena" data-escena="A">A</button>
+    <button class="tecla tecla-escena" data-escena="B">B</button>
+    <button class="tecla tecla-escena" data-escena="C">C</button>
+    <button class="tecla tecla-escena" data-escena="D">D</button>
+  </div>
+  <div class="barra-fin">
+    <button class="boton-barra" id="btn-modulacion" aria-pressed="false">MODULACIÓN</button>
+    <button class="boton-barra" disabled title="Fuera de esta maqueta">AJUSTES</button>
+  </div>
+</header>
+
+<main class="consola">
+  <section class="tiras" id="tiras" aria-label="Canales"></section>
+
+  <aside class="lateral">
+    <div class="grupo">
+      <h2>EFECTO</h2>
+      <div class="selector" id="efectos" role="radiogroup" aria-label="Tipo de efecto"></div>
+      <div class="par-perillas" id="efecto-params"></div>
+    </div>
+    <div class="grupo">
+      <h2>COMPRESOR</h2>
+      <button class="tecla tecla-ancha" id="btn-comp" aria-pressed="false"><i class="lampara blanco"></i>COMP</button>
+    </div>
+    <div class="grupo">
+      <h2>SOUND PADS</h2>
+      <div class="pads">
+        <button class="tecla pad">1</button><button class="tecla pad">2</button>
+        <button class="tecla pad">3</button><button class="tecla pad">4</button>
+      </div>
+    </div>
+    <p class="nota">Las unidades son de ejemplo: la curva real de cada control está por medir.</p>
+  </aside>
+</main>
+
+<div class="colores" id="colores" hidden aria-label="Color de la cinta"></div>
+<script src="maqueta.js"></script>
+</body>
+</html>

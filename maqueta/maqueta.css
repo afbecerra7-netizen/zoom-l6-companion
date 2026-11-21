@@ -1,0 +1,158 @@
+/* Zoom L6max · maqueta de interfaz.
+ * Lenguaje visual de TAPE 101 (Tapeios/prototipo/lineamientos.md): chasis grafito mudo,
+ * solo se ilumina lo que informa, cada color de lámpara tiene un único significado, y la
+ * luz no gira con la perilla. Las cintas de los canales son gaffer con rotulador. */
+
+@font-face { font-family: 'Barlow Condensed'; src: url('assets/fuentes/BarlowCondensed-Medium.ttf') format('truetype'); font-weight: 500; font-display: swap; }
+@font-face { font-family: 'Barlow Condensed'; src: url('assets/fuentes/BarlowCondensed-SemiBold.ttf') format('truetype'); font-weight: 600; font-display: swap; }
+@font-face { font-family: 'Barlow Condensed'; src: url('assets/fuentes/BarlowCondensed-Bold.ttf') format('truetype'); font-weight: 700 800; font-display: swap; }
+@font-face { font-family: 'Barlow'; src: url('assets/fuentes/Barlow-Regular.ttf') format('truetype'); font-weight: 400; font-display: swap; }
+@font-face { font-family: 'Barlow'; src: url('assets/fuentes/Barlow-Medium.ttf') format('truetype'); font-weight: 500; font-display: swap; }
+@font-face { font-family: 'IBM Plex Mono'; src: url('assets/fuentes/IBMPlexMono-Regular.ttf') format('truetype'); font-weight: 400; font-display: swap; }
+@font-face { font-family: 'IBM Plex Mono'; src: url('assets/fuentes/IBMPlexMono-Medium.ttf') format('truetype'); font-weight: 500 600; font-display: swap; }
+@font-face { font-family: 'Permanent Marker'; src: url('assets/fuentes/PermanentMarker-Regular.ttf') format('truetype'); font-weight: 400; font-display: swap; }
+
+:root {
+  color-scheme: dark;
+  --hundido: #121110; --chasis: #1c1a18; --placa: #252220; --placa-2: #302c29; --linea: #3a3532;
+  --serigrafia: #ece6da; --serigrafia-2: #a9a194; --serigrafia-3: #908879; --inactivo: #6e675d;
+  --vfd: #8ef0dc;
+  --ambar: #ffb23e; --ambar-off: #45321a;
+  --verde: #5ed27a; --verde-off: #1c3a24;
+  --blanco: #f6f1e7; --blanco-off: #38342f;
+  --luz-filo: rgba(255, 244, 226, 0.10); --sombra-filo: rgba(0, 0, 0, 0.42);
+  --hueco: inset 1px 2px 4px rgba(0, 0, 0, 0.75), inset 0 0 0 1px rgba(0, 0, 0, 0.45), 0 1px 0 rgba(255, 244, 226, 0.05);
+  --relieve-1: inset 1px 1px 0 var(--luz-filo), inset -1px -1px 0 var(--sombra-filo), 0 0 0 1px rgba(0, 0, 0, 0.5), 1px 3px 6px rgba(0, 0, 0, 0.40);
+  --relieve-3: inset 0 1px 0 rgba(255, 244, 226, 0.16), inset -1px 0 0 rgba(0, 0, 0, 0.3), 0 3px 0 #0d0c0b, 1px 4px 2px rgba(0, 0, 0, 0.5);
+  --relieve-3-pulsada: inset 0 1px 0 rgba(255, 244, 226, 0.07), 0 1px 0 #0d0c0b, 1px 2px 3px rgba(0, 0, 0, 0.5);
+  --relieve-4: 0 0 0 1px rgba(0, 0, 0, 0.6), 1px 2px 2px rgba(0, 0, 0, 0.55), 3px 6px 8px rgba(0, 0, 0, 0.45);
+  --f-panel: 'Barlow Condensed', 'Arial Narrow', sans-serif;
+  --f-texto: 'Barlow', 'Helvetica Neue', Arial, sans-serif;
+  --f-datos: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+  --f-mano: 'Permanent Marker', 'Marker Felt', cursive;
+}
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+/* Sin scroll: la consola ocupa la ventana entera y, si la ventana es menor que el lienzo base
+   (1400 × 720), se encoge completa. La escala la calcula el CSS, no un evento: tan(atan2(a, b))
+   da el cociente a/b sin unidades. Con `resize` o un ResizeObserver la escala se quedaba atrás
+   al achicar la ventana (medido); así no hay nada que pueda desactualizarse.
+   Las medidas de la ventana van registradas como longitudes: sin eso el navegador divide
+   los números crudos (100 entre el ancho base) y la escala sale igual en cualquier ventana
+   (medido). El ancho base es 1400 porque por debajo las tiras no dan para su cabecera: con
+   1180 el rótulo ESTÉREO chocaba con su interruptor y las cintas largas se cortaban. */
+@property --ventana-ancho { syntax: '<length>'; inherits: true; initial-value: 0px; }
+@property --ventana-alto { syntax: '<length>'; inherits: true; initial-value: 0px; }
+html { height: 100%; overflow: hidden; --ventana-ancho: 100vw; --ventana-alto: 100vh; }
+body {
+  --escala: min(1, tan(atan2(var(--ventana-ancho), 1400px)), tan(atan2(var(--ventana-alto), 720px)));
+  margin: 0; width: calc(100vw / var(--escala)); height: calc(100vh / var(--escala));
+  transform: scale(var(--escala)); transform-origin: 0 0; display: flex; flex-direction: column;
+  background: linear-gradient(rgba(28, 26, 24, 0.90), rgba(28, 26, 24, 0.90)), url('assets/texturas/panel-grano.jpg') 0 0 / 256px, var(--chasis);
+  color: var(--serigrafia); font: 400 14px/1.4 var(--f-texto); -webkit-font-smoothing: antialiased; user-select: none;
+}
+button { font: inherit; color: inherit; border: 0; background: none; cursor: pointer; padding: 0; }
+button:disabled { cursor: default; opacity: 0.45; }
+:focus-visible { outline: 2px solid var(--vfd); outline-offset: 2px; }
+h2 { margin: 0; font: 700 11.5px/1 var(--f-panel); letter-spacing: 0.16em; color: var(--serigrafia-2); display: flex; align-items: center; gap: 6px; }
+h2::after { content: ""; flex: 1; height: 1px; background: var(--linea); }
+
+/* ---------------------------------------------------------------- lámparas: apagadas se ven, oscuras */
+.lampara { width: 9px; height: 9px; border-radius: 50%; flex: none; background: var(--off); box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(0, 0, 0, 0.5); }
+.lampara.ambar { --on: var(--ambar); --off: var(--ambar-off); }
+.lampara.verde { --on: var(--verde); --off: var(--verde-off); }
+.lampara.blanco { --on: var(--blanco); --off: var(--blanco-off); }
+.on > .lampara, .lampara.on { background: radial-gradient(circle at 40% 35%, rgba(255, 255, 255, 0.75) 0, var(--on) 48%); box-shadow: 0 0 9px var(--on), 0 0 2px var(--on); }
+
+/* ---------------------------------------------------------------- barra */
+.barra { height: 54px; flex: none; display: flex; align-items: center; gap: 22px; padding: 0 14px; background: var(--hundido); box-shadow: 0 1px 0 rgba(255, 244, 226, 0.06); }
+.placa-nombre { display: flex; flex-direction: column; gap: 3px; }
+.placa-nombre b { font: 800 19px/1 var(--f-panel); letter-spacing: 0.14em; }
+.placa-nombre span { font: 600 10.5px/1 var(--f-panel); letter-spacing: 0.16em; color: var(--serigrafia-3); }
+.estado { display: flex; align-items: center; gap: 8px; font: 500 12px/1 var(--f-datos); color: var(--serigrafia-2); }
+.escenas { display: flex; align-items: center; gap: 6px; margin-left: auto; }
+.rotulo { font: 700 11.5px/1 var(--f-panel); letter-spacing: 0.16em; color: var(--serigrafia-2); margin-right: 4px; }
+.barra-fin { display: flex; gap: 8px; }
+.boton-barra { height: 34px; padding: 0 14px; border-radius: 6px; background: linear-gradient(170deg, var(--placa-2), #262320); box-shadow: var(--relieve-1); font: 700 12.5px/1 var(--f-panel); letter-spacing: 0.14em; color: var(--serigrafia-2); }
+.boton-barra[aria-pressed="true"] { color: var(--hundido); background: var(--vfd); }
+
+/* ---------------------------------------------------------------- teclas */
+.tecla { display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 30px; min-width: 34px; padding: 0 9px; border-radius: 5px; background: linear-gradient(175deg, #3a3633, #2b2825); box-shadow: var(--relieve-3); font: 700 12.5px/1 var(--f-panel); letter-spacing: 0.12em; color: var(--serigrafia); transition: transform 0.06s; }
+.tecla:active, .tecla.on { transform: translateY(2px); box-shadow: var(--relieve-3-pulsada); }
+.tecla-escena.on { color: var(--hundido); background: linear-gradient(175deg, #fbf7ee, #ddd6c8); }
+.tecla-ancha { width: 100%; justify-content: flex-start; }
+.tecla-mini { height: 22px; min-width: 0; padding: 0 6px; font-size: 10.5px; letter-spacing: 0.08em; color: var(--serigrafia-2); }
+.tecla-mini.on { color: var(--serigrafia); }
+
+/* ---------------------------------------------------------------- consola */
+.consola { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) 204px; gap: 10px; padding: 10px; }
+.tiras { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 8px; min-height: 0; }
+.tira { position: relative; display: flex; flex-direction: column; gap: 7px; min-height: 0; padding: 8px 7px 10px; border-radius: 8px; background: var(--placa); box-shadow: var(--relieve-1); }
+.tira.estereo { background: linear-gradient(180deg, #282523, var(--placa) 30%); }
+.tira-cab { display: flex; align-items: center; gap: 6px; height: 24px; }
+.tira-num { font: 800 21px/1 var(--f-panel); letter-spacing: 0.04em; }
+.tira-tipo { font: 600 10.5px/1 var(--f-panel); letter-spacing: 0.14em; color: var(--serigrafia-3); }
+.tira-cab .tecla-mini { margin-left: auto; }
+.rejilla { display: grid; grid-template-columns: 1fr 1fr; justify-items: center; row-gap: 3px; margin-top: 5px; }
+.fila-pan { display: flex; align-items: center; justify-content: space-around; }
+.tecla-mute { flex-direction: column; height: 40px; width: 46px; gap: 5px; font-size: 11.5px; }
+.tira.muda .perilla, .tira.muda .fader { opacity: 0.5; }
+
+/* ---------------------------------------------------------------- perillas: la luz no gira, solo el índice */
+.perilla { position: relative; display: flex; flex-direction: column; align-items: center; gap: 2px; touch-action: none; }
+.perilla-zona { position: relative; width: 40px; height: 40px; border-radius: 50%; cursor: ns-resize; }
+.perilla.bipolar .perilla-zona::before { content: ""; position: absolute; left: 50%; top: -1px; width: 2px; height: 4px; margin-left: -1px; border-radius: 1px; background: var(--serigrafia-2); }
+.perilla-falda { position: absolute; inset: 5px; border-radius: 50%; background: linear-gradient(135deg, rgba(255, 244, 226, 0.10), transparent 45%, rgba(0, 0, 0, 0.32)), repeating-conic-gradient(#2c2927 0 6deg, #3a3633 6deg 12deg); box-shadow: var(--relieve-4); }
+.perilla-falda::before { content: ""; position: absolute; inset: 15%; border-radius: 50%; background: radial-gradient(circle, transparent 0 58%, rgba(0, 0, 0, 0.18) 100%), conic-gradient(from 20deg, #dcd8d1, #a7a298 12%, #ece8e1 25%, #9d978d 38%, #d8d3cb 50%, #a29d93 62%, #ebe7e0 75%, #9f9a90 88%, #dcd8d1); box-shadow: inset 1px 1px 1px rgba(255, 255, 255, 0.6), inset -1px -2px 2px rgba(0, 0, 0, 0.4); }
+.perilla-tapa { position: absolute; inset: 15%; border-radius: 50%; z-index: 1; }
+.perilla-indice { position: absolute; left: 50%; top: 4%; width: 2.5px; height: 38%; margin-left: -1.25px; border-radius: 2px; background: #1f1d1b; }
+.perilla-nombre { font: 700 11.5px/1 var(--f-panel); letter-spacing: 0.1em; color: var(--serigrafia); }
+.perilla-valor { font: 500 10.5px/1 var(--f-datos); color: var(--serigrafia-2); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.perilla-lfo { position: absolute; right: -2px; top: -2px; width: 8px; height: 8px; border-radius: 50%; border: 1.5px solid var(--vfd); display: none; }
+.modulacion .perilla-lfo { display: block; }
+
+/* ---------------------------------------------------------------- fader */
+.fader { flex: 1; min-height: 120px; display: grid; grid-template-columns: 34px 1fr; touch-action: none; }
+.fader-escala { position: relative; font: 500 10.5px/1 var(--f-datos); color: var(--serigrafia-3); }
+.fader-escala span { position: absolute; right: 6px; transform: translateY(-50%); white-space: nowrap; }
+.fader-escala span.cero { color: var(--serigrafia); }
+.fader-pista { position: relative; cursor: ns-resize; }
+.fader-pista::before { content: ""; position: absolute; left: 50%; top: 0; bottom: 0; width: 8px; margin-left: -4px; border-radius: 4px; background: var(--hundido); box-shadow: var(--hueco); }
+.fader-tapa { position: absolute; left: 50%; width: 38px; height: 20px; margin: -10px 0 0 -19px; border-radius: 3px; background: linear-gradient(180deg, #e6e2db, #a8a39a 45%, #1f1d1b 45% 55%, #c9c4bb 55%, #8f897f); box-shadow: var(--relieve-4); }
+.fader-valor { align-self: center; padding: 4px 7px; border-radius: 4px; background: var(--hundido); box-shadow: var(--hueco); font: 500 11.5px/1 var(--f-datos); color: var(--serigrafia); font-variant-numeric: tabular-nums; }
+
+/* ---------------------------------------------------------------- cinta gaffer con rotulador */
+.cinta-zona { height: 40px; display: flex; align-items: center; justify-content: center; }
+.cinta {
+  --tela: #efece4; position: relative; isolation: isolate; max-width: 100%; min-width: 64px; padding: 6px 12px 5px;
+  transform: rotate(var(--giro, -1deg)); text-align: center; white-space: nowrap; overflow: hidden;
+  font: 400 18px/1.15 var(--f-mano); color: #16130f; cursor: text; user-select: text; outline: none;
+  filter: drop-shadow(1px 1px 0.5px rgba(0, 0, 0, 0.5)) drop-shadow(2px 4px 3px rgba(0, 0, 0, 0.4));
+}
+.cinta::before {  /* la tela va aparte: el borde rasgado no debe cortar la sombra */
+  content: ""; position: absolute; inset: 0; z-index: -1;
+  background:
+    repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.055) 0 1px, transparent 1px 3px),
+    repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.045) 0 1px, transparent 1px 3px),
+    linear-gradient(170deg, rgba(255, 255, 255, 0.25), transparent 45%, rgba(0, 0, 0, 0.10)), var(--tela);
+  clip-path: polygon(0 8%, 2% 0, 4% 9%, 6% 2%, 94% 0, 96% 8%, 98% 1%, 100% 7%, 99% 50%, 100% 94%, 98% 100%, 96% 93%, 94% 100%, 6% 98%, 4% 92%, 2% 100%, 0 93%, 1% 50%);
+}
+.cinta:focus::before { outline: 2px solid var(--vfd); outline-offset: -2px; }
+.cinta.vacia { filter: none; font: 600 10.5px/1 var(--f-panel); letter-spacing: 0.14em; color: var(--inactivo); padding: 9px 10px; border: 1px dashed var(--inactivo); border-radius: 3px; transform: none; }
+.cinta.vacia::before { display: none; }
+.cinta.vacia:empty::after { content: "PEGAR CINTA"; }
+.colores { position: fixed; z-index: 10; display: flex; gap: 6px; padding: 6px; border-radius: 8px; background: #0e0d0c; border: 1px solid #44403b; }
+.colores button { width: 20px; height: 20px; border-radius: 4px; box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.5); }
+.colores button.on { outline: 2px solid var(--vfd); outline-offset: 1px; }
+
+/* ---------------------------------------------------------------- lateral */
+.lateral { display: flex; flex-direction: column; gap: 10px; min-height: 0; }
+.grupo { display: flex; flex-direction: column; gap: 9px; padding: 10px; border-radius: 8px; background: var(--placa); box-shadow: var(--relieve-1); }
+.selector { display: grid; grid-template-columns: 1fr 1fr; gap: 7px 6px; }
+.selector .tecla { justify-content: flex-start; padding: 0 7px; font-size: 11.5px; }
+.par-perillas { display: flex; justify-content: space-around; min-height: 66px; align-items: center; }
+.par-perillas em { font: 500 11.5px/1.3 var(--f-texto); color: var(--serigrafia-3); font-style: normal; text-align: center; }
+.pads { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 6px; }
+.pad { height: 40px; font-size: 16px; }
+.nota { margin: auto 4px 2px; font: 400 11.5px/1.35 var(--f-texto); color: var(--serigrafia-3); }
