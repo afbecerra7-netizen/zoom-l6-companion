@@ -14,18 +14,23 @@
     "type-check": "vue-tsc --build",
     "test": "vitest run",
     "test:watch": "vitest",
-    "decode": "tsx scripts/decode-capture.ts"
+    "decode": "tsx scripts/decode-capture.ts",
+    "build:app": "vite build --base ./",
+    "app": "vite build --base ./ && electron .",
+    "package:mac": "vite build --base ./ && electron-packager . \"Zoom L6\" --platform=darwin --arch=arm64 --out=release --overwrite --app-bundle-id=co.afbecerra.zoom-l6 --ignore=\"^/(src|docs|images|scripts|public|release|\\.github|\\.vscode|\\.claude)($|/)\""
   },
   "dependencies": {
     "vue": "^3.5.22",
     "webmidi": "^3.1.13"
   },
   "devDependencies": {
+    "@electron/packager": "^18.3.6",
     "@tsconfig/node22": "^22.0.2",
     "@types/node": "^22.18.6",
     "@vitejs/plugin-vue": "^6.0.1",
     "@vitejs/plugin-vue-jsx": "^5.1.1",
     "@vue/tsconfig": "^0.8.1",
+    "electron": "^33.2.1",
     "npm-run-all": "^4.1.5",
     "npm-run-all2": "^8.0.4",
     "tsx": "^4.23.13",
@@ -34,5 +39,6 @@
     "vite-plugin-vue-devtools": "^8.0.2",
     "vitest": "^5.0.0",
     "vue-tsc": "^3.1.0"
-  }
+  },
+  "main": "electron/main.cjs"
 }
