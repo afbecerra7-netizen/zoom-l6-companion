@@ -1,7 +1,7 @@
 /* Lenguaje visual de TAPE 101 para la consola (Tapeios/prototipo/lineamientos.md): chasis
  * grafito mudo, solo se ilumina lo que informa, cada color de lámpara tiene un único
- * significado y la luz no gira con la perilla. Los paneles de ajustes avanzados y de
- * depuración conservan por ahora el aspecto original. */
+ * significado y la luz no gira con la perilla. La consola, el panel de Ajustes y el cajón
+ * de Debug lo usan; DeviceNotice todavía conserva los colores del original. */
 
 @font-face { font-family: 'Barlow Condensed'; src: url('./tape101/BarlowCondensed-Medium.ttf') format('truetype'); font-weight: 500; font-display: swap; }
 @font-face { font-family: 'Barlow Condensed'; src: url('./tape101/BarlowCondensed-SemiBold.ttf') format('truetype'); font-weight: 600; font-display: swap; }
