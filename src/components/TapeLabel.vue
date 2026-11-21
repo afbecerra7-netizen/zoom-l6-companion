@@ -17,7 +17,13 @@
       @input="alEscribir"
       @keydown.stop="alTeclear"
     ></div>
-    <div v-if="enfocada" class="cinta-colores" :aria-label="t('ui.tape_color')">
+    <div
+      v-if="enfocada"
+      ref="colores"
+      class="cinta-colores"
+      :style="{ '--corre': corre + 'px' }"
+      :aria-label="t('ui.tape_color')"
+    >
       <button
         v-for="(tela, i) in TELAS"
         :key="tela"
@@ -51,7 +57,7 @@
 import { t } from '../i18n';
 // Cinta gaffer con rotulador: el nombre de lo que va en el canal, escrito a mano.
 import { computed, nextTick, onMounted, ref, watch } from 'vue';
-import { CINTA_MAX, TELAS, TELA_NOMBRES, cintaDe, tintaPara } from '../stores/ui';
+import { CINTA_MAX, TELAS, TELA_NOMBRES, cintaDe, escalaConsola, tintaPara } from '../stores/ui';
 
 const props = defineProps<{ canal: number }>();
 
@@ -62,6 +68,31 @@ const cinta = cintaDe(props.canal);
 const el = ref<HTMLElement | null>(null);
 const enfocada = ref(false);
 const vacia = computed(() => cinta.texto.length === 0 && !enfocada.value);
+/**
+ * La fila de colores va centrada sobre la cinta, y en los canales de las orillas se salía de la
+ * ventana (en el 1 se cortaba el blanco). Al abrirla se mide y se corre lo justo para que quepa.
+ * La consola está escalada: la medida llega en píxeles de pantalla y el corrimiento va en los del
+ * lienzo.
+ */
+const colores = ref<HTMLElement | null>(null);
+const corre = ref(0);
+const MARGEN = 8;
+watch(enfocada, async (abierta) => {
+  corre.value = 0;
+  if (!abierta) return;
+  await nextTick();
+  const fila = colores.value;
+  if (!fila) return;
+  const marco = (fila.closest('.consola-escala') ?? document.documentElement).getBoundingClientRect();
+  const caja = fila.getBoundingClientRect();
+  const izquierda = Math.max(marco.left, 0) + MARGEN;
+  const derecha = Math.min(marco.right, window.innerWidth) - MARGEN;
+  let dx = 0;
+  if (caja.left < izquierda) dx = izquierda - caja.left;
+  else if (caja.right > derecha) dx = derecha - caja.right;
+  corre.value = dx / escalaConsola();
+});
+
 /** La tela elegida; si el índice guardado ya no existe en la paleta, la neutra. */
 const tela = computed(() => TELAS[cinta.color] ?? TELAS[0]);
 
@@ -157,7 +188,7 @@ watch(() => cinta.color, ajusta);
 .cinta.vacia { filter: none; font: 600 10.5px/1 var(--f-panel); letter-spacing: 0.14em; color: var(--inactivo); padding: 9px 10px; border: 1px dashed var(--inactivo); border-radius: 3px; transform: none; }
 .cinta.vacia::before { display: none; }
 .cinta.vacia:empty::after { content: attr(data-placeholder); }
-.cinta-colores { position: absolute; left: 50%; bottom: calc(100% + 6px); transform: translateX(-50%); z-index: 10; display: flex; gap: 6px; padding: 6px; border-radius: 8px; background: #0e0d0c; border: 1px solid #44403b; }
+.cinta-colores { position: absolute; left: 50%; bottom: calc(100% + 6px); transform: translateX(calc(-50% + var(--corre, 0px))); z-index: 10; display: flex; gap: 6px; padding: 6px; border-radius: 8px; background: #0e0d0c; border: 1px solid #44403b; }
 .cinta-colores button { width: 20px; height: 20px; padding: 0; border: 0; border-radius: 4px; box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.5); cursor: pointer; }
 .cinta-colores button.on { outline: 2px solid var(--vfd); outline-offset: 1px; }
 </style>
