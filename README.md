@@ -1,21 +1,56 @@
-# Zoom L6 Companion App
+# MESA 101 · Zoom L6 Companion
 
-> **Este es un fork** de [philmillman/zoom-l6-companion](https://github.com/philmillman/zoom-l6-companion) (MIT).
-> Añade dos cosas sobre el original:
->
-> - **App de Mac** (Electron): `npm run app` para abrirla, `npm run package:mac` para generar `release/Zoom L6.app`.
-> - **Una consola nueva**, con el lenguaje visual de TAPE 101: los canales lado a lado, faders para el
->   nivel, una cinta gaffer con rotulador por canal para escribir qué va en cada uno, y los LFO a la
->   vista solo en modo MODULACIÓN. Ocupa la ventana entera y no tiene scroll: si la ventana es menor
->   que 1400 × 720, se encoge completa. La maqueta que se aprobó está en [`maqueta/`](maqueta/).
->
-> La consola **no muestra dB**: la curva de cada control de la Zoom no está medida, así que enseña
-> escalas neutras (0 a 10, −10 a +10). El rango de FREQ, 100 Hz – 8 kHz, sí sale del manual. Los
-> paneles de Ajustes y Debug conservan el aspecto original.
->
-> Prueba de punta a punta contra un mezclador simulado (puertos MIDI virtuales; pide un Python con
-> `mido` y `python-rtmidi`): `PYTHON=/ruta/a/python sh scripts/e2e/correr.sh`. No sustituye a probar
-> con el aparato. Lo que sigue es el README del original.
+## MESA 101 — a Mac console for the Zoom L6max
+
+This fork of [philmillman/zoom-l6-companion](https://github.com/philmillman/zoom-l6-companion)
+(MIT) turns it into **MESA 101**, a standalone Mac app that looks and works like a
+small mixing desk:
+
+![MESA 101 with eight labelled channels](images/mesa101.png)
+
+- **The eight channels side by side**, with faders for level, knobs for EQ, sends
+  and pan, and mute — the whole desk in one window, no scrolling. Below 1400 × 720
+  it shrinks as a whole instead of hiding anything.
+- **A gaffer tape per channel**: write what is plugged in, pick a colour, and note
+  the MIDI channel of the instrument behind it. It is only a label — the app sends
+  nothing on that channel.
+- **Scenes A–D** recalled from the app. After a recall, the controls whose value
+  the mixer does not report back are dimmed with a «—» until you touch them.
+- **LFOs on any knob** (MODULATION button), from the original project.
+- English and Spanish.
+
+**Tested with a real L6max, firmware 1.10** (November 2026): level, pan, mute and
+scenes move the mixer, and the LED ring around each encoder follows the app. Three
+mixer settings had to be fixed for that firmware: *USB Audio Mode* and *Mixer
+Control via MIDI* are stored the other way round from the L6, and *MIDI Out Mode*
+lives at a different byte of the settings dump. The mixer acknowledges every
+settings write with `00 00` whether it applied it or not, so the app re-reads the
+dump after writing instead of trusting the reply. Not measured: the curve of each
+control, which is why the desk shows neutral 0–10 scales rather than dB.
+
+### Install
+
+Download `MESA 101` from the [Releases](../../releases) page (Apple Silicon Mac),
+unzip it and move it to *Applications*. **The app is not signed by Apple**, so the
+first time macOS will refuse to open it: right-click it, choose *Open*, and confirm.
+Connect the L6max over USB before opening it.
+
+### Build it yourself
+
+```bash
+npm install
+npm run app            # run it
+npm run package:mac    # build release/MESA 101-darwin-arm64/MESA 101.app
+```
+
+An end-to-end test drives the console against a simulated mixer over virtual MIDI
+ports (needs a Python with `mido` and `python-rtmidi`); it refuses to run while a
+real L6max is plugged in, so it never touches your mixer:
+`PYTHON=/path/to/python sh scripts/e2e/correr.sh`.
+
+*Not affiliated with Zoom Corp. Below is the original project's README.*
+
+---
 
 **This project is not affiliated with Zoom Corp.**
 
